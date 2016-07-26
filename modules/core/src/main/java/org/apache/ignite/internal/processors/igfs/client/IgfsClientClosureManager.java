@@ -32,14 +32,14 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * Manager to handle IGFS client closures.
  */
 public class IgfsClientClosureManager extends IgfsManager {
-    /** Busy lock. */
-    private final GridStripedSpinBusyLock busyLock = new GridStripedSpinBusyLock();
-
     /** Pending closures received when manager is not started yet. */
     private final ConcurrentLinkedDeque startupClos = new ConcurrentLinkedDeque();
 
     /** Marshaller. */
     private final Marshaller marsh;
+
+    /** Stopping flag. */
+    private volatile boolean stopping;
 
     /**
      * Constructor.
