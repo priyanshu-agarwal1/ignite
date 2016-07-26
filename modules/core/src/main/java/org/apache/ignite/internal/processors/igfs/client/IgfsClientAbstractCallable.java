@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -28,7 +29,10 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
@@ -43,8 +47,11 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     /** Base fields count. */
     private static final byte BASE_FIELDS_CNT = 2;
 
+    /** Type ID. */
+    private short typeId;
+
     /** IGFS name. */
-    protected String igfsName;
+    private String igfsName;
 
     /** Path for operation. */
     protected IgfsPath path;
@@ -52,6 +59,61 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     /** Injected instance. */
     @IgniteInstanceResource
     private transient Ignite ignite;
+
+    /**
+     * Create callable for the given type ID.
+     *
+     * @param typeId Type ID.
+     * @return Callable.
+     */
+    public static IgfsClientAbstractCallable callableForTypeId(short typeId) {
+        switch (typeId) {
+            case IgfsClientMetaIdsForPathCallable.TYPE_ID:
+                return new IgfsClientMetaIdsForPathCallable();
+
+            case IgfsClientMetaInfoForPathCallable.TYPE_ID:
+                return new IgfsClientMetaInfoForPathCallable();
+
+            case IgfsClientAffinityCallable.TYPE_ID:
+                return new IgfsClientAffinityCallable();
+
+            case IgfsClientDeleteCallable.TYPE_ID:
+                return new IgfsClientDeleteCallable();
+
+            case IgfsClientExistsCallable.TYPE_ID:
+                return new IgfsClientExistsCallable();
+
+            case IgfsClientInfoCallable.TYPE_ID:
+                return new IgfsClientInfoCallable();
+
+            case IgfsClientListFilesCallable.TYPE_ID:
+                return new IgfsClientListFilesCallable();
+
+            case IgfsClientListPathsCallable.TYPE_ID:
+                return new IgfsClientListPathsCallable();
+
+            case IgfsClientMkdirsCallable.TYPE_ID:
+                return new IgfsClientMkdirsCallable();
+
+            case IgfsClientRenameCallable.TYPE_ID:
+                return new IgfsClientRenameCallable();
+
+            case IgfsClientSetTimesCallable.TYPE_ID:
+                return new IgfsClientUpdateCallable();
+
+            case IgfsClientSizeCallable.TYPE_ID:
+                return new IgfsClientSizeCallable();
+
+            case IgfsClientSummaryCallable.TYPE_ID:
+                return new IgfsClientSummaryCallable();
+
+            case IgfsClientUpdateCallable.TYPE_ID:
+                return new IgfsClientUpdateCallable();
+
+            default:
+                throw new IgniteException("Unsupported IGFS callable type ID: " + typeId);
+        }
+    }
 
     /**
      * Default constructor.
@@ -63,10 +125,12 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     /**
      * Constructor.
      *
+     * @param typeId Type ID.
      * @param igfsName IGFS name.
      * @param path Path.
      */
-    protected IgfsClientAbstractCallable(@Nullable String igfsName, @Nullable IgfsPath path) {
+    protected IgfsClientAbstractCallable(short typeId, @Nullable String igfsName, @Nullable IgfsPath path) {
+        this.typeId = typeId;
         this.igfsName = igfsName;
         this.path = path;
     }
@@ -128,6 +192,13 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     }
 
     /**
+     * @return Type ID.
+     */
+    public short typeId() {
+        return typeId;
+    }
+
+    /**
      * @return Fields count.
      */
     public final byte fieldsCount() {
@@ -172,5 +243,37 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         assert false : "Should not be called.";
 
         return true;
+    }
+
+    /**
+     * Read callable content from reader.
+     *
+     * @param reader Reader.
+     * @param fieldId Field ID.
+     */
+    public final void readFrom(MessageReader reader, int fieldId) {
+        switch (fieldId) {
+            case 0:
+                igfsName = reader.readString("igfsName");
+
+            case 1:
+                String pathStr = reader.readString("path");
+
+                if (reader.isLastRead())
+                    path = new IgfsPath(pathStr);
+
+            default:
+                readFrom0(reader, fieldId - BASE_FIELDS_CNT);
+        }
+    }
+
+    /**
+     * Read callable content from reader (for child classes).
+     *
+     * @param reader Reader.
+     * @param fieldId Field ID.
+     */
+    protected void readFrom0(MessageReader reader, int fieldId) {
+        assert false : "Should not be called.";
     }
 }

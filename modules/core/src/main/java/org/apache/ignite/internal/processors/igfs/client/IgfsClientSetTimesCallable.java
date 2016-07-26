@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +31,9 @@ import org.jetbrains.annotations.Nullable;
  * IGFS client set times callable.
  */
 public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void> {
+    /** Type ID. */
+    public static final short TYPE_ID = 10;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +60,7 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
      */
     public IgfsClientSetTimesCallable(@Nullable String igfsName, IgfsPath path, long accessTime,
         long modificationTime) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
 
         this.accessTime = accessTime;
         this.modificationTime = modificationTime;
@@ -96,6 +100,19 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
                 assert fieldId == 1;
 
                 return writer.writeLong("modificationTime", modificationTime);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readFrom0(MessageReader reader, int fieldId) {
+        switch (fieldId) {
+            case 0:
+                accessTime = reader.readLong("accessTime");
+
+            default:
+                assert fieldId == 1;
+
+                modificationTime = reader.readLong("modificationTime");
         }
     }
 

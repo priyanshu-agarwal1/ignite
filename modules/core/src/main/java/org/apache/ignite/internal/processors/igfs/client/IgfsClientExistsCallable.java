@@ -26,6 +26,9 @@ import org.jetbrains.annotations.Nullable;
  * IGFS client exists callable.
  */
 public class IgfsClientExistsCallable extends IgfsClientAbstractCallable<Boolean> {
+    /** Type ID. */
+    public static final short TYPE_ID = 4;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +46,7 @@ public class IgfsClientExistsCallable extends IgfsClientAbstractCallable<Boolean
      * @param path Path.
      */
     public IgfsClientExistsCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
     }
 
     /** {@inheritDoc} */

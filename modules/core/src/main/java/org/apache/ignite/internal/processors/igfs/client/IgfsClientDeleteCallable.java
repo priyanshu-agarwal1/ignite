@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +31,9 @@ import org.jetbrains.annotations.Nullable;
  * IGFS client delete callable.
  */
 public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean> {
+    /** Type ID. */
+    public static final short TYPE_ID = 3;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,7 +55,7 @@ public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean
      * @param recursive Recursive flag.
      */
     public IgfsClientDeleteCallable(@Nullable String igfsName, IgfsPath path, boolean recursive) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
 
         this.recursive = recursive;
     }
@@ -81,6 +85,13 @@ public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean
         assert fieldId == 0;
 
         return writer.writeBoolean("recursive", recursive);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readFrom0(MessageReader reader, int fieldId) {
+        assert fieldId == 0;
+
+        recursive = reader.readBoolean("recursive");
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -29,7 +31,7 @@ import java.util.UUID;
  */
 public class IgfsClientClosureRequest implements Message {
     /** Base fields (all except of target) count. */
-    private static final byte BASE_FIELDS_CNT = 2;
+    private static final byte BASE_FIELDS_CNT = 3;
 
     /** Originating node ID. */
     private UUID nodeId;
@@ -38,6 +40,7 @@ public class IgfsClientClosureRequest implements Message {
     private long msgId;
 
     /** Target callable. */
+    @GridToStringInclude
     private IgfsClientAbstractCallable target;
 
     /**
@@ -125,6 +128,12 @@ public class IgfsClientClosureRequest implements Message {
 
                 writer.incrementState();
 
+            case 2:
+                if (!writer.writeShort("typeId", target.typeId()))
+                    return false;
+
+                writer.incrementState();
+
             default:
                 while (writer.state() < fieldsCount) {
                     if (!target.writeTo(writer, writer.state() - BASE_FIELDS_CNT))
@@ -139,6 +148,56 @@ public class IgfsClientClosureRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return false;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                nodeId = reader.readUuid("nodeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                msgId = reader.readLong("msgId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                short typeId;
+
+                typeId = reader.readShort("typeId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                target = IgfsClientAbstractCallable.callableForTypeId(typeId);
+
+                reader.incrementState();
+
+            default:
+                while (reader.state() < fieldsCount()) {
+                    target.readFrom(reader, reader.state() - BASE_FIELDS_CNT);
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+                }
+        }
+
+        return reader.afterMessageRead(IgfsClientClosureRequest.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsClientClosureRequest.class, this);
     }
 }

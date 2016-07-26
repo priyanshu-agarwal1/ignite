@@ -27,6 +27,9 @@ import org.jetbrains.annotations.Nullable;
  * IGFS client summary callable.
  */
 public class IgfsClientSummaryCallable extends IgfsClientAbstractCallable<IgfsPathSummary> {
+    /** Type ID. */
+    public static final short TYPE_ID = 12;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +47,7 @@ public class IgfsClientSummaryCallable extends IgfsClientAbstractCallable<IgfsPa
      * @param path Path.
      */
     public IgfsClientSummaryCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
     }
 
     /** {@inheritDoc} */

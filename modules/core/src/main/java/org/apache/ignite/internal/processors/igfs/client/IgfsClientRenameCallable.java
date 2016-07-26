@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +33,9 @@ import org.jetbrains.annotations.Nullable;
  * IGFS client rename callable.
  */
 public class IgfsClientRenameCallable extends IgfsClientAbstractCallable<Void> {
+    /** Type ID. */
+    public static final short TYPE_ID = 9;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,7 +57,7 @@ public class IgfsClientRenameCallable extends IgfsClientAbstractCallable<Void> {
      * @param destPath Destination path.
      */
     public IgfsClientRenameCallable(@Nullable String igfsName, IgfsPath srcPath, IgfsPath destPath) {
-        super(igfsName, srcPath);
+        super(TYPE_ID, igfsName, srcPath);
 
         this.destPath = destPath;
     }
@@ -85,6 +89,16 @@ public class IgfsClientRenameCallable extends IgfsClientAbstractCallable<Void> {
         assert fieldId == 0;
 
         return writer.writeString("destPath", destPath.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readFrom0(MessageReader reader, int fieldId) {
+        assert fieldId == 0;
+
+        String dstPathStr = reader.readString("destPath");
+
+        if (reader.isLastRead())
+            destPath = new IgfsPath(dstPathStr);
     }
 
     /** {@inheritDoc} */

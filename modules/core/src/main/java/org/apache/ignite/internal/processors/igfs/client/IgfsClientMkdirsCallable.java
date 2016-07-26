@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,9 @@ import java.util.Map;
  * IGFS client mkdirs callable.
  */
 public class IgfsClientMkdirsCallable extends IgfsClientAbstractCallable<Void> {
+    /** Type ID. */
+    public static final short TYPE_ID = 8;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -55,7 +59,7 @@ public class IgfsClientMkdirsCallable extends IgfsClientAbstractCallable<Void> {
      * @param props Properties.
      */
     public IgfsClientMkdirsCallable(@Nullable String igfsName, IgfsPath path, @Nullable Map<String, String> props) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
 
         this.props = props;
     }
@@ -87,6 +91,13 @@ public class IgfsClientMkdirsCallable extends IgfsClientAbstractCallable<Void> {
         assert fieldId == 0;
 
         return writer.writeMap("props", props, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readFrom0(MessageReader reader, int fieldId) {
+        assert fieldId == 0;
+
+        props = reader.readMap("recursive", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
     }
 
     /** {@inheritDoc} */

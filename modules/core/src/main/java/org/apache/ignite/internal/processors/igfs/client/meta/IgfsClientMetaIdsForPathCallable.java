@@ -31,6 +31,9 @@ import java.util.List;
  * Get entry info for the given path.
  */
 public class IgfsClientMetaIdsForPathCallable extends IgfsClientAbstractCallable<List<IgniteUuid>> {
+    /** Type ID. */
+    public static final short TYPE_ID = 0;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,7 +51,7 @@ public class IgfsClientMetaIdsForPathCallable extends IgfsClientAbstractCallable
      * @param path Path.
      */
     public IgfsClientMetaIdsForPathCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
     }
 
     /** {@inheritDoc} */

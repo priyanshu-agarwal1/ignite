@@ -28,6 +28,9 @@ import java.util.Collection;
  * IGFS client list paths callable.
  */
 public class IgfsClientListPathsCallable extends IgfsClientAbstractCallable<Collection<IgfsPath>> {
+    /** Type ID. */
+    public static final short TYPE_ID = 7;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -45,7 +48,7 @@ public class IgfsClientListPathsCallable extends IgfsClientAbstractCallable<Coll
      * @param path Path.
      */
     public IgfsClientListPathsCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
     }
 
     /** {@inheritDoc} */

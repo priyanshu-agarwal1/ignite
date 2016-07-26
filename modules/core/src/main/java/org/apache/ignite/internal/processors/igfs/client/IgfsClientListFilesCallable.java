@@ -29,6 +29,9 @@ import java.util.Collection;
  * IGFS client list files callable.
  */
 public class IgfsClientListFilesCallable extends IgfsClientAbstractCallable<Collection<IgfsFile>> {
+    /** Type ID. */
+    public static final short TYPE_ID = 6;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +49,7 @@ public class IgfsClientListFilesCallable extends IgfsClientAbstractCallable<Coll
      * @param path Path.
      */
     public IgfsClientListFilesCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
     }
 
     /** {@inheritDoc} */

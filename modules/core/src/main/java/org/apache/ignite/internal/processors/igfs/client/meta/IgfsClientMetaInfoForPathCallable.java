@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  * Get entry info for the given path.
  */
 public class IgfsClientMetaInfoForPathCallable extends IgfsClientAbstractCallable<IgfsEntryInfo> {
+    /** Type ID. */
+    public static final short TYPE_ID = 1;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +49,7 @@ public class IgfsClientMetaInfoForPathCallable extends IgfsClientAbstractCallabl
      * @param path Path.
      */
     public IgfsClientMetaInfoForPathCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
     }
 
     /** {@inheritDoc} */

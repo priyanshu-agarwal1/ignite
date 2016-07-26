@@ -24,6 +24,7 @@ import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +34,9 @@ import java.util.Collection;
  * IGFS client affinity callable.
  */
 public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Collection<IgfsBlockLocation>> {
+    /** Type ID. */
+    public static final short TYPE_ID = 2;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -62,7 +66,7 @@ public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Colle
      * @param maxLen Maximum length.
      */
     public IgfsClientAffinityCallable(@Nullable String igfsName, IgfsPath path, long start, long len, long maxLen) {
-        super(igfsName, path);
+        super(TYPE_ID, igfsName, path);
 
         this.start = start;
         this.len = len;
@@ -106,6 +110,22 @@ public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Colle
                 assert fieldId == 2;
 
                 return writer.writeLong("maxLen", maxLen);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readFrom0(MessageReader reader, int fieldId) {
+        switch (fieldId) {
+            case 0:
+                start = reader.readLong("start");
+
+            case 1:
+                len = reader.readLong("len");
+
+            default:
+                assert fieldId == 2;
+
+                maxLen = reader.readLong("maxLen");
         }
     }
 
