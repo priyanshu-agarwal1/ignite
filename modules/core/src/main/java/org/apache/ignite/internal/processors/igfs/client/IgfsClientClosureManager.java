@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,24 +38,23 @@ public class IgfsClientClosureManager extends IgfsManager {
     /** Pending closures received when manager is not started yet. */
     private final ConcurrentLinkedDeque startupClos = new ConcurrentLinkedDeque();
 
-    /** Kernal context. */
-    private GridKernalContext ctx;
-
-    /** IGFS configuration. */
-    private FileSystemConfiguration igfsCfg;
-
     /** Marshaller. */
-    private Marshaller marsh;
+    private final Marshaller marsh;
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     */
+    public IgfsClientClosureManager(GridKernalContext ctx) {
+        super(ctx);
+
+        marsh = ctx.config().getMarshaller();
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        ctx = igfsCtx.kernalContext();
-
-        igfsCfg = igfsCtx.configuration();
-
-        marsh = ctx.config().getMarshaller();
-
-        ctx.discovery().setCustomEventListener();
+        // TODO
     }
 
     /** {@inheritDoc} */
@@ -74,21 +73,31 @@ public class IgfsClientClosureManager extends IgfsManager {
     }
 
     /**
-     * Execute callable.
+     * Execute IGFS closure.
      *
+     * @param igfsCtx IGFS context.
      * @param clo Closure.
      * @return Result.
      */
-    public <T> T execute(IgfsClientAbstractCallable<T> clo) {
+    public <T> T execute(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo) throws IgniteCheckedException {
+        return executeAsync(igfsCtx, clo).get();
+    }
 
+    /**
+     * Execute IGFS closure asynchronously.
+     *
+     * @param igfsCtx IGFS context.
+     * @param clo Closure.
+     * @return Future.
+     */
+    public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo) {
+        // TODO
+
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientClosureManager.class, this);
-    }
-
-    private class DiscoveryListener implements GridLocalEventListener {
-
     }
 }

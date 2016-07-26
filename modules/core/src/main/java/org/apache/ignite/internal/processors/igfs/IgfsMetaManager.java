@@ -40,6 +40,7 @@ import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -159,7 +160,9 @@ public class IgfsMetaManager extends IgfsManager {
      * @param relaxed Relaxed mode flag.
      * @param client Client flag.
      */
-    public IgfsMetaManager(boolean relaxed, boolean client) {
+    public IgfsMetaManager(GridKernalContext ctx, boolean relaxed, boolean client) {
+        super(ctx);
+
         this.relaxed = relaxed;
         this.client = client;
     }
@@ -182,21 +185,21 @@ public class IgfsMetaManager extends IgfsManager {
 
         cfg = igfsCtx.configuration();
 
-        evts = igfsCtx.kernalContext().event();
+        evts = ctx.event();
 
         sampling = new IgfsSamplingKey(cfg.getName());
 
-        log = igfsCtx.kernalContext().log(IgfsMetaManager.class);
+        log = ctx.log(IgfsMetaManager.class);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantCast")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        metaCache = igfsCtx.kernalContext().cache().getOrStartCache(cfg.getMetaCacheName());
+        metaCache = ctx.cache().getOrStartCache(cfg.getMetaCacheName());
 
         assert metaCache != null;
 
-        igfsCtx.kernalContext().cache().internalCache(cfg.getMetaCacheName()).preloader().startFuture()
+        ctx.cache().internalCache(cfg.getMetaCacheName()).preloader().startFuture()
             .listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> f) {
                     metaCacheStartLatch.countDown();
@@ -205,7 +208,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         id2InfoPrj = (IgniteInternalCache<IgniteUuid, IgfsEntryInfo>)metaCache.<IgniteUuid, IgfsEntryInfo>cache();
 
-        locNode = igfsCtx.kernalContext().discovery().localNode();
+        locNode = ctx.discovery().localNode();
 
         // Start background delete worker.
         if (!client) {
@@ -266,7 +269,7 @@ public class IgfsMetaManager extends IgfsManager {
         IgniteCompute cliCompute0 = cliCompute;
 
         if (cliCompute0 == null) {
-            IgniteEx ignite = igfsCtx.kernalContext().grid();
+            IgniteEx ignite = ctx.grid();
 
             ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
 
@@ -1011,7 +1014,7 @@ public class IgfsMetaManager extends IgfsManager {
                     // Fire events.
                     IgfsPath newPath = new IgfsPath(dstPathIds.path(), dstName);
 
-                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), srcPath, newPath,
+                    IgfsUtils.sendEvents(ctx, srcPath, newPath,
                         srcInfo.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED);
                 }
             }
@@ -2916,7 +2919,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                             tx.commit();
 
-                            IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EventType.EVT_IGFS_FILE_OPENED_WRITE);
+                            IgfsUtils.sendEvents(ctx, path, EventType.EVT_IGFS_FILE_OPENED_WRITE);
 
                             return info;
                         }
@@ -3081,7 +3084,7 @@ public class IgfsMetaManager extends IgfsManager {
                             // Prepare result and commit.
                             tx.commit();
 
-                            IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EventType.EVT_IGFS_FILE_OPENED_WRITE);
+                            IgfsUtils.sendEvents(ctx, path, EventType.EVT_IGFS_FILE_OPENED_WRITE);
 
                             return new IgfsCreateResult(newInfo, secondaryOut);
                         }
@@ -3368,18 +3371,18 @@ public class IgfsMetaManager extends IgfsManager {
     private void generateCreateEvents(List<IgfsPath> createdPaths, boolean file) {
         if (evts.isRecordable(EventType.EVT_IGFS_DIR_CREATED)) {
             for (int i = 0; i < createdPaths.size() - 1; i++)
-                IgfsUtils.sendEvents(igfsCtx.kernalContext(), createdPaths.get(i),
+                IgfsUtils.sendEvents(ctx, createdPaths.get(i),
                     EventType.EVT_IGFS_DIR_CREATED);
         }
 
         IgfsPath leafPath = createdPaths.get(createdPaths.size() - 1);
 
         if (file) {
-            IgfsUtils.sendEvents(igfsCtx.kernalContext(), leafPath, EventType.EVT_IGFS_FILE_CREATED);
-            IgfsUtils.sendEvents(igfsCtx.kernalContext(), leafPath, EventType.EVT_IGFS_FILE_OPENED_WRITE);
+            IgfsUtils.sendEvents(ctx, leafPath, EventType.EVT_IGFS_FILE_CREATED);
+            IgfsUtils.sendEvents(ctx, leafPath, EventType.EVT_IGFS_FILE_OPENED_WRITE);
         }
         else
-            IgfsUtils.sendEvents(igfsCtx.kernalContext(), leafPath, EventType.EVT_IGFS_DIR_CREATED);
+            IgfsUtils.sendEvents(ctx, leafPath, EventType.EVT_IGFS_DIR_CREATED);
     }
 
     /**

@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.ipc.IpcEndpointBindException;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -51,6 +52,15 @@ public class IgfsServerManager extends IgfsManager {
 
     /** Kernal start latch. */
     private CountDownLatch kernalStartLatch = new CountDownLatch(1);
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     */
+    public IgfsServerManager(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -163,8 +173,7 @@ public class IgfsServerManager extends IgfsManager {
          * Constructor.
          */
         private BindWorker() {
-            super(igfsCtx.kernalContext().gridName(), "bind-worker",
-                igfsCtx.kernalContext().log(IgfsServerManager.class));
+            super(ctx.gridName(), "bind-worker", ctx.log(IgfsServerManager.class));
         }
 
         /**

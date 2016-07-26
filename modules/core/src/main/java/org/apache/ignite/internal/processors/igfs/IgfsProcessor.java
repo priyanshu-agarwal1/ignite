@@ -33,6 +33,7 @@ import org.apache.ignite.igfs.mapreduce.IgfsJob;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientClosureManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -83,11 +84,16 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     private final ConcurrentMap<String, IgfsContext> igfsCache =
         new ConcurrentHashMap8<>();
 
+    /** Client closure manager. */
+    private final IgfsClientClosureManager cloMgr;
+
     /**
      * @param ctx Kernal context.
      */
     public IgfsProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        cloMgr = new IgfsClientClosureManager(ctx);
     }
 
     /** {@inheritDoc} */
@@ -127,10 +133,11 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             IgfsContext igfsCtx = new IgfsContext(
                 ctx,
                 cfg0,
-                new IgfsMetaManager(cfg0.isRelaxedConsistency(), metaClient),
-                new IgfsDataManager(),
-                new IgfsServerManager(),
-                new IgfsFragmentizerManager());
+                cloMgr,
+                new IgfsMetaManager(ctx, cfg0.isRelaxedConsistency(), metaClient),
+                new IgfsDataManager(ctx),
+                new IgfsServerManager(ctx),
+                new IgfsFragmentizerManager(ctx));
 
             // Start managers first.
             for (IgfsManager mgr : igfsCtx.managers())
@@ -138,6 +145,9 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
             igfsCache.put(maskName(cfg0.getName()), igfsCtx);
         }
+
+        // Start closure manager last.
+        cloMgr.start(null);
 
         if (log.isDebugEnabled())
             log.debug("IGFS processor started.");
@@ -201,10 +211,14 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         for (IgfsContext igfsCtx : igfsCache.values())
             for (IgfsManager mgr : igfsCtx.managers())
                 mgr.onKernalStart();
+
+        cloMgr.onKernalStart();
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
+        cloMgr.stop(cancel);
+
         // Stop IGFS instances.
         for (IgfsContext igfsCtx : igfsCache.values()) {
             if (log.isDebugEnabled())
@@ -229,6 +243,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
+        cloMgr.onKernalStop(cancel);
+
         for (IgfsContext igfsCtx : igfsCache.values()) {
             if (log.isDebugEnabled())
                 log.debug("Stopping igfs: " + igfsCtx.configuration().getName());
@@ -388,8 +404,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
 
         if (F.isEmpty(locAttrs) || F.isEmpty(rmtAttrs))
             return;
-
-        assert rmtAttrs != null && locAttrs != null;
 
         for (IgfsAttributes rmtAttr : rmtAttrs)
             for (IgfsAttributes locAttr : locAttrs) {

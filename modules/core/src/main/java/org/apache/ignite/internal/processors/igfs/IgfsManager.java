@@ -20,12 +20,17 @@ package org.apache.ignite.internal.processors.igfs;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract class for IGFS managers.
  */
 public abstract class IgfsManager {
-    /** IGFS context. */
+    /** Kernal context. */
+    protected final GridKernalContext ctx;
+
+    /** IGFS context (not set for shared managers). */
     protected IgfsContext igfsCtx;
 
     /** Logger. */
@@ -35,19 +40,26 @@ public abstract class IgfsManager {
     private AtomicBoolean starting = new AtomicBoolean();
 
     /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     */
+    protected IgfsManager(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
      * Called when IGFS processor is started.
      *
      * @param igfsCtx IGFS context.
      */
-    public void start(IgfsContext igfsCtx) throws IgniteCheckedException {
+    public void start(@Nullable IgfsContext igfsCtx) throws IgniteCheckedException {
         if (!starting.compareAndSet(false, true))
             assert false : "Method start is called more than once for manager: " + this;
 
-        assert igfsCtx != null;
-
         this.igfsCtx = igfsCtx;
 
-        log = igfsCtx.kernalContext().log(getClass());
+        log = ctx.log(getClass());
 
         start0();
 

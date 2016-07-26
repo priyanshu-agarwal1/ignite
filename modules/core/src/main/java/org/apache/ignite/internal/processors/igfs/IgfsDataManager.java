@@ -33,6 +33,7 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -143,7 +144,16 @@ public class IgfsDataManager extends IgfsManager {
         new ConcurrentHashMap8<>();
 
     /**
+     * Constructor.
      *
+     * @param ctx Kernal context.
+     */
+    public IgfsDataManager(GridKernalContext ctx) {
+        super(ctx);
+    }
+
+    /**
+     * Await data cache initiaization.
      */
     void awaitInit() {
         try {
@@ -162,7 +172,7 @@ public class IgfsDataManager extends IgfsManager {
 
         topic = F.isEmpty(igfsName) ? TOPIC_IGFS : TOPIC_IGFS.topic(igfsName);
 
-        igfsCtx.kernalContext().io().addMessageListener(topic, new GridMessageListener() {
+        ctx.io().addMessageListener(topic, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 if (msg instanceof IgfsBlocksMessage)
                     processBlocksMessage(nodeId, (IgfsBlocksMessage)msg);
@@ -171,7 +181,7 @@ public class IgfsDataManager extends IgfsManager {
             }
         });
 
-        igfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
@@ -186,16 +196,15 @@ public class IgfsDataManager extends IgfsManager {
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
+        igfsSvc = ctx.getIgfsExecutorService();
 
-        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
-            "igfs-" + igfsName + "-delete-worker", log);
+        delWorker = new AsyncDeleteWorker(ctx.gridName(), "igfs-" + igfsName + "-delete-worker", log);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        dataCachePrj = igfsCtx.kernalContext().cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
+        dataCachePrj = ctx.cache().getOrStartCache(igfsCtx.configuration().getDataCacheName());
 
         assert dataCachePrj != null;
 
@@ -203,7 +212,7 @@ public class IgfsDataManager extends IgfsManager {
 
         metrics = igfsCtx.igfs().localMetrics();
 
-        AffinityKeyMapper mapper = igfsCtx.kernalContext().cache()
+        AffinityKeyMapper mapper = ctx.cache()
             .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
@@ -213,7 +222,7 @@ public class IgfsDataManager extends IgfsManager {
 
         assert grpBlockSize != 0;
 
-        igfsCtx.kernalContext().cache().internalCache(igfsCtx.configuration().getDataCacheName()).preloader()
+        ctx.cache().internalCache(igfsCtx.configuration().getDataCacheName()).preloader()
             .startFuture().listen(new CI1<IgniteInternalFuture<Object>>() {
             @Override public void apply(IgniteInternalFuture<Object> f) {
                 dataCacheStartLatch.countDown();
@@ -266,7 +275,7 @@ public class IgfsDataManager extends IgfsManager {
         if (!dataCache.context().affinityNode())
             return null;
 
-        UUID nodeId = igfsCtx.kernalContext().localNodeId();
+        UUID nodeId = ctx.localNodeId();
 
         if (prevAffKey != null && dataCache.affinity().mapKeyToNode(prevAffKey).isLocal())
             return prevAffKey;
@@ -296,7 +305,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     private IgniteDataStreamer<IgfsBlockKey, byte[]> dataStreamer() {
         IgniteDataStreamer<IgfsBlockKey, byte[]> ldr =
-            igfsCtx.kernalContext().<IgfsBlockKey, byte[]>dataStream().dataStreamer(dataCachePrj.name());
+            ctx.<IgfsBlockKey, byte[]>dataStream().dataStreamer(dataCachePrj.name());
 
         FileSystemConfiguration cfg = igfsCtx.configuration();
 
@@ -331,7 +340,7 @@ public class IgfsDataManager extends IgfsManager {
         final IgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
         if (log.isDebugEnabled() &&
-            dataCache.affinity().isPrimaryOrBackup(igfsCtx.kernalContext().discovery().localNode(), key)) {
+            dataCache.affinity().isPrimaryOrBackup(ctx.discovery().localNode(), key)) {
             log.debug("Reading non-local data block [path=" + path + ", fileInfo=" + fileInfo +
                 ", blockIdx=" + blockIdx + ']');
         }
@@ -1022,7 +1031,7 @@ public class IgfsDataManager extends IgfsManager {
                 ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
 
             completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                igfsCtx.kernalContext().localNodeId(), e));
+                ctx.localNodeId(), e));
 
             return;
         }
@@ -1149,7 +1158,7 @@ public class IgfsDataManager extends IgfsManager {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
         try {
-            ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
+            ackMsg.finishUnmarshal(ctx.config().getMarshaller(), null);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal message (will ignore): " + ackMsg, e);

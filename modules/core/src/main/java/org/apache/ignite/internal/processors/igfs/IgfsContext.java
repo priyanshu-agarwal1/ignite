@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientClosureManager;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,6 +39,9 @@ public class IgfsContext {
 
     /** Managers. */
     private List<IgfsManager> mgrs = new LinkedList<>();
+
+    /** Closure manager. */
+    private final IgfsClientClosureManager cloMgr;
 
     /** Meta manager. */
     private final IgfsMetaManager metaMgr;
@@ -55,8 +59,11 @@ public class IgfsContext {
     private final IgfsEx igfs;
 
     /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      * @param cfg IGFS configuration.
+     * @param cloMgr Closure manager.
      * @param metaMgr Meta manager.
      * @param dataMgr Data manager.
      * @param srvMgr Server manager.
@@ -66,6 +73,7 @@ public class IgfsContext {
     public IgfsContext(
         GridKernalContext ctx,
         FileSystemConfiguration cfg,
+        IgfsClientClosureManager cloMgr,
         IgfsMetaManager metaMgr,
         IgfsDataManager dataMgr,
         IgfsServerManager srvMgr,
@@ -73,6 +81,8 @@ public class IgfsContext {
     ) throws IgniteCheckedException {
         this.ctx = ctx;
         this.cfg = cfg;
+
+        this.cloMgr = cloMgr;
 
         this.metaMgr = add(metaMgr);
         this.dataMgr = add(dataMgr);
@@ -108,6 +118,13 @@ public class IgfsContext {
      */
     public List<IgfsManager> managers() {
         return mgrs;
+    }
+
+    /**
+     * @return Closure manager.
+     */
+    public IgfsClientClosureManager closure() {
+        return cloMgr;
     }
 
     /**

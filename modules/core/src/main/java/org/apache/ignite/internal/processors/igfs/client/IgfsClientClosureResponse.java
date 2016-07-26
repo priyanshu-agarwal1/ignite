@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.igfs.client;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * CIGFS client closure execute response.
+ * IGFS client closure execute response.
  */
 public class IgfsClientClosureResponse implements Message {
     /**
