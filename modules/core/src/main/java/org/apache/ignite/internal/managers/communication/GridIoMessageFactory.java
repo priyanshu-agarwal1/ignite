@@ -120,6 +120,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerRequest;
 import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientClosureRequest;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientClosureResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
@@ -160,6 +162,16 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -28:
+                msg = new IgfsClientClosureResponse();
+
+                break;
+
+            case -27:
+                msg = new IgfsClientClosureRequest();
+
+                break;
+
             case -26:
                 msg = new TxLockList();
 

@@ -25,6 +25,8 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -72,6 +74,18 @@ public class IgfsClientUpdateCallable extends IgfsClientAbstractCallable<IgfsFil
     /** {@inheritDoc} */
     @Override public void readBinary0(BinaryRawReader reader) throws BinaryObjectException {
         props = IgfsUtils.readProperties(reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected byte fieldsCount0() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean writeTo0(MessageWriter writer, int fieldId) {
+        assert fieldId == 0;
+
+        return writer.writeMap("props", props, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING);
     }
 
     /** {@inheritDoc} */

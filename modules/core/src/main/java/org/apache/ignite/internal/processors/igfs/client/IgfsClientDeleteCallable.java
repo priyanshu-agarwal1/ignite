@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -68,6 +69,18 @@ public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean
     /** {@inheritDoc} */
     @Override public void readBinary0(BinaryRawReader reader) throws BinaryObjectException {
         recursive = reader.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected byte fieldsCount0() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean writeTo0(MessageWriter writer, int fieldId) {
+        assert fieldId == 0;
+
+        return writer.writeBoolean("recursive", recursive);
     }
 
     /** {@inheritDoc} */

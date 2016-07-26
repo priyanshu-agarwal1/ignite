@@ -94,7 +94,10 @@ public enum GridTopic {
     TOPIC_QUERY,
 
     /** */
-    TOPIC_TX;
+    TOPIC_TX,
+
+    /** Topic to handle IGFS closures. */
+    TOPIC_IGFS_CLO;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

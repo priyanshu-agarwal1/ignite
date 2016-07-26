@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,6 +39,9 @@ import org.jetbrains.annotations.Nullable;
 public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Base fields count. */
+    private static final byte BASE_FIELDS_CNT = 2;
 
     /** IGFS name. */
     protected String igfsName;
@@ -121,5 +125,52 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      */
     protected void readBinary0(BinaryRawReader rawReader) {
         // No-op.
+    }
+
+    /**
+     * @return Fields count.
+     */
+    public final byte fieldsCount() {
+        return (byte)(BASE_FIELDS_CNT + fieldsCount0());
+    }
+
+    /**
+     * @return Additional fields count of concrete class.
+     */
+    protected byte fieldsCount0() {
+        return 0;
+    }
+
+    /**
+     * Write callable to writer.
+     *
+     * @param writer Writer.
+     * @param fieldId Field ID.
+     * @return Result.
+     */
+    public final boolean writeTo(MessageWriter writer, int fieldId) {
+        switch (fieldId) {
+            case 0:
+                return writer.writeString("igfsName", igfsName);
+
+            case 1:
+                return writer.writeString("path", path.toString());
+
+            default:
+                return writeTo0(writer, fieldId - BASE_FIELDS_CNT);
+        }
+    }
+
+    /**
+     * Write callable to writer (for child classes).
+     *
+     * @param writer Writer.
+     * @param fieldId Field ID.
+     * @return Result.
+     */
+    protected boolean writeTo0(MessageWriter writer, int fieldId) {
+        assert false : "Should not be called.";
+
+        return true;
     }
 }

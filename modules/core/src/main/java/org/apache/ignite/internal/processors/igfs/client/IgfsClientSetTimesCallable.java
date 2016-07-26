@@ -23,6 +23,7 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -78,6 +79,24 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
     @Override public void readBinary0(BinaryRawReader reader) throws BinaryObjectException {
         accessTime = reader.readLong();
         modificationTime = reader.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected byte fieldsCount0() {
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean writeTo0(MessageWriter writer, int fieldId) {
+        switch (fieldId) {
+            case 0:
+                return writer.writeLong("accessTime", accessTime);
+
+            default:
+                assert fieldId == 1;
+
+                return writer.writeLong("modificationTime", modificationTime);
+        }
     }
 
     /** {@inheritDoc} */

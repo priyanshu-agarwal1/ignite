@@ -129,27 +129,27 @@ public abstract class IgfsManager {
      * @return Start info.
      */
     protected String startInfo() {
-        return "Cache manager started: " + getClass().getSimpleName();
+        return "IGFS manager started: " + getClass().getSimpleName();
     }
 
     /**
      * @return Stop info.
      */
     protected String stopInfo() {
-        return "Cache manager stopped: " + getClass().getSimpleName();
+        return "IGFS manager stopped: " + getClass().getSimpleName();
     }
 
     /**
      * @return Start info.
      */
     protected String kernalStartInfo() {
-        return "Cache manager received onKernalStart() callback: " + getClass().getSimpleName();
+        return "IGFS manager received onKernalStart() callback: " + getClass().getSimpleName();
     }
 
     /**
      * @return Stop info.
      */
     protected String kernalStopInfo() {
-        return "Cache manager received onKernalStop() callback: " + getClass().getSimpleName();
+        return "IGFS manager received onKernalStop() callback: " + getClass().getSimpleName();
     }
 }

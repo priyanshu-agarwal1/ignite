@@ -24,6 +24,7 @@ import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -85,6 +86,27 @@ public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Colle
         start = reader.readLong();
         len = reader.readLong();
         maxLen = reader.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected byte fieldsCount0() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean writeTo0(MessageWriter writer, int fieldId) {
+        switch (fieldId) {
+            case 0:
+                return writer.writeLong("start", start);
+
+            case 1:
+                return writer.writeLong("len", len);
+
+            default:
+                assert fieldId == 2;
+
+                return writer.writeLong("maxLen", maxLen);
+        }
     }
 
     /** {@inheritDoc} */
