@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
@@ -87,7 +89,7 @@ public class IgfsClientManager extends IgfsManager {
     @Override protected void start0() throws IgniteCheckedException {
         ctx.io().addMessageListener(GridTopic.TOPIC_IGFS_CLI, msgLsnr);
 
-        ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_METRICS_UPDATED);
+        ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
@@ -333,6 +335,26 @@ public class IgfsClientManager extends IgfsManager {
                 onResponse((IgfsClientResponse)msg);
             else
                 U.error(log, "IGFS client message listener received unknown message: " + msg);
+        }
+    }
+
+    /**
+     * Discovery listener.
+     */
+    private class DiscoveryListener implements GridLocalEventListener {
+        /** {@inheritDoc} */
+        @Override public void onEvent(Event evt) {
+            switch (evt.type()) {
+                case EVT_NODE_LEFT:
+                case EVT_NODE_FAILED:
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
+
+                    onNodeLeft(evt0.eventNode().id());
+
+                    break;
+
+                default:
+                    assert false : "Unknown event: " + evt;
         }
     }
 }
