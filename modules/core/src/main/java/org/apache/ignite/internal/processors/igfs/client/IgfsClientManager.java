@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 public class IgfsClientManager extends IgfsManager {
     /** Pending input operations received when manager is not started yet. */
-    private final ConcurrentLinkedDeque<IgfsClientRequest> pending = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<IgfsClientInOperation> pending = new ConcurrentLinkedDeque<>();
 
     /** Outgoing operations. */
     private final Map<Long, IgfsClientOutOperation> outOps = new ConcurrentHashMap<>();
@@ -168,9 +168,10 @@ public class IgfsClientManager extends IgfsManager {
     /**
      * Handle request.
      *
+     * @param nodeId Node ID.
      * @param req Request.
      */
-    private void onRequest(IgfsClientRequest req) {
+    private void onRequest(UUID nodeId, IgfsClientRequest req) {
         rwLock.readLock().lock();
 
         try {
@@ -178,9 +179,10 @@ public class IgfsClientManager extends IgfsManager {
                 return; // Discovery listener on remote node will handle node leave.
 
             if (ready)
-                processRequest(req); // Normal execution flow.
+                processRequest(nodeId, req); // Normal execution flow.
             else
-                pending.add(req); // Add to pending set if manager is not fully started yet.
+                // Add to pending set if manager is not operational yet.
+                pending.add(new IgfsClientInOperation(nodeId, req));
         }
         finally {
             rwLock.readLock().unlock();
@@ -248,9 +250,10 @@ public class IgfsClientManager extends IgfsManager {
     /**
      * Actual request processing. Happens inside appropriate thread pool.
      *
+     * @param nodeId Node ID.
      * @param req Request.
      */
-    private void processRequest(IgfsClientRequest req) {
+    private void processRequest(UUID nodeId, IgfsClientRequest req) {
         IgfsClientResponse resp;
 
         try {
@@ -272,10 +275,10 @@ public class IgfsClientManager extends IgfsManager {
 
         // Send response.
         try {
-            ctx.io().send(req.nodeId(), GridTopic.TOPIC_IGFS_CLI, resp, GridIoPolicy.PUBLIC_POOL);
+            ctx.io().send(nodeId, GridTopic.TOPIC_IGFS_CLI, resp, GridIoPolicy.PUBLIC_POOL);
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send IGFS client response [nodeId=" + req.nodeId() +
+            U.error(log, "Failed to send IGFS client response [nodeId=" + nodeId +
                 ", msgId=" + req.messageId() + ']', e);
         }
     }
@@ -295,7 +298,7 @@ public class IgfsClientManager extends IgfsManager {
             assert msg != null;
 
             if (msg instanceof IgfsClientRequest)
-                onRequest((IgfsClientRequest)msg);
+                onRequest(nodeId, (IgfsClientRequest)msg);
             else if (msg instanceof IgfsClientResponse)
                 onResponse((IgfsClientResponse)msg);
             else

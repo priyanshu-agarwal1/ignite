@@ -31,10 +31,7 @@ import java.util.UUID;
  */
 public class IgfsClientRequest implements Message {
     /** Base fields (all except of target) count. */
-    private static final byte BASE_FIELDS_CNT = 3;
-
-    /** Originating node ID. */
-    private UUID nodeId;
+    private static final byte BASE_FIELDS_CNT = 2;
 
     /** Message ID. */
     private long msgId;
@@ -61,16 +58,8 @@ public class IgfsClientRequest implements Message {
         assert nodeId != null;
         assert target != null;
 
-        this.nodeId = nodeId;
         this.msgId = msgId;
         this.target = target;
-    }
-
-    /**
-     * @return Node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
     }
 
     /**
@@ -117,18 +106,12 @@ public class IgfsClientRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("nodeId", nodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeLong("msgId", msgId))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeShort("typeId", target.typeId()))
                     return false;
 
@@ -155,14 +138,6 @@ public class IgfsClientRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                nodeId = reader.readUuid("nodeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())
@@ -170,7 +145,7 @@ public class IgfsClientRequest implements Message {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 short typeId;
 
                 typeId = reader.readShort("typeId");

@@ -17,36 +17,30 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.UUID;
 
 /**
- * IGFS client closure outgoing operation descriptor.
+ * IGFS client closure incoming operation descriptor.
  */
-public class IgfsClientOutOperation {
+public class IgfsClientInOperation {
     /** Target node ID. */
     private final UUID nodeId;
 
-    /** Target operation. */
-    private final IgfsClientAbstractCallable target;
-
-    /** Future completed when operation is ready. */
-    private final GridFutureAdapter fut;
+    /** Request. */
+    private final IgfsClientRequest req;
 
     /**
      * Constructor.
      *
      * @param nodeId Target node ID.
-     * @param target Target operation.
-     * @param fut Future completed when operation is ready.
+     * @param req Request.
      */
-    public IgfsClientOutOperation(UUID nodeId, IgfsClientAbstractCallable target, GridFutureAdapter fut) {
+    public IgfsClientInOperation(UUID nodeId, IgfsClientRequest req) {
         this.nodeId = nodeId;
-        this.target = target;
-        this.fut = fut;
+        this.req = req;
     }
 
     /**
@@ -59,19 +53,12 @@ public class IgfsClientOutOperation {
     /**
      * @return Target operation.
      */
-    public IgfsClientAbstractCallable target() {
-        return target;
-    }
-
-    /**
-     * @return Future completed when operation is ready.
-     */
-    public GridFutureAdapter future() {
-        return fut;
+    public IgfsClientRequest request() {
+        return req;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsClientOutOperation.class, this);
+        return S.toString(IgfsClientInOperation.class, this);
     }
 }
