@@ -22,7 +22,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
-import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
+import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 public class IgfsClientClosureManager extends IgfsManager {
     /** Pending input operations received when manager is not started yet. */
-    private final ConcurrentLinkedDeque<IgfsClientClosureInOperation> inOps = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<IgfsClientClosureRequest> pending = new ConcurrentLinkedDeque<>();
 
     /** Outgoing operations. */
     private final Map<Long, IgfsClientClosureOutOperation> outOps = new ConcurrentHashMap<>();
@@ -46,8 +46,15 @@ public class IgfsClientClosureManager extends IgfsManager {
     /** Marshaller. */
     private final Marshaller marsh;
 
+    /** Whether manager is fully started and ready to process requests. */
+    private volatile boolean ready;
+
     /** Stopping flag. */
     private volatile boolean stopping;
+
+    /** RW lock for synchronization. */
+    private final StripedCompositeReadWriteLock rwLock =
+        new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors() * 2);
 
     /**
      * Constructor.
@@ -99,6 +106,7 @@ public class IgfsClientClosureManager extends IgfsManager {
      * @return Future.
      */
     public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo) {
+
         // TODO
 
         return null;
@@ -143,6 +151,37 @@ public class IgfsClientClosureManager extends IgfsManager {
      * @param nodeId Node ID.
      */
     private void onNodeLeft(UUID nodeId) {
+        // TODO
+    }
+
+    /**
+     * Handle closure request.
+     *
+     * @param req Request.
+     */
+    private void onClosureRequest(IgfsClientClosureRequest req) {
+        rwLock.readLock().lock();
+
+        try {
+            if (stopping)
+                return; // Discovery listener on remote node will handle node leave.
+
+            if (ready)
+                onClosureRequest0(req); // Normal execution flow.
+            else
+                pending.add(req); // Add to pending set if manager is not fully started yet.
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Actual request processing. Happens inside appropriate thread pool.
+     *
+     * @param req Request.
+     */
+    private void onClosureRequest0(IgfsClientClosureRequest req) {
         // TODO
     }
 
