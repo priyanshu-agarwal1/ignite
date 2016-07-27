@@ -217,6 +217,8 @@ public class IgfsClientManager extends IgfsManager {
     private ClusterNode selectNode(IgfsContext igfsCtx, IgfsClientNodeSelectionStrategy strategy)
         throws IgniteCheckedException {
         // TODO
+
+        return null;
     }
 
     /**
