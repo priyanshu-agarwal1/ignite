@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -36,10 +37,11 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * Manager to handle IGFS client closures.
  */
 public class IgfsClientClosureManager extends IgfsManager {
-    /** Pending closures received when manager is not started yet. */
-    private final ConcurrentLinkedDeque startupClos = new ConcurrentLinkedDeque();
+    /** Pending input operations received when manager is not started yet. */
+    private final ConcurrentLinkedDeque<IgfsClientClosureInOperation> inOps = new ConcurrentLinkedDeque<>();
 
-    private final Map<Long, Operation> ops = new ConcurrentHashMap<>();
+    /** Outgoing operations. */
+    private final Map<Long, IgfsClientClosureOutOperation> outOps = new ConcurrentHashMap<>();
 
     /** Marshaller. */
     private final Marshaller marsh;
@@ -147,19 +149,5 @@ public class IgfsClientClosureManager extends IgfsManager {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientClosureManager.class, this);
-    }
-
-    /**
-     * Outgoing operation.
-     */
-    private static class OutOperation {
-        /** Target node ID. */
-        private final UUID nodeId;
-
-        /** Target operation. */
-        private final IgfsClientAbstractCallable target;
-
-        /** Future, completed when operation is ready. */
-        private final IgniteInternalFuture fut;
     }
 }
