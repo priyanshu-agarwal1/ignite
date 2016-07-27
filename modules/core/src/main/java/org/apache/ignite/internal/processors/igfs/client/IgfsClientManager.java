@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.igfs.IgfsException;
@@ -192,10 +193,30 @@ public class IgfsClientManager extends IgfsManager {
      */
     public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo,
         IgfsClientNodeSelectionStrategy strategy) {
+        try {
+
+            ClusterNode node = selectNode(igfsCtx, strategy);
+        }
+        catch (IgniteCheckedException e) {
+            // TODO
+        }
 
         // TODO
 
         return null;
+    }
+
+    /**
+     * Select the most appropriate node for the task.
+     *
+     * @param igfsCtx IGFS context.
+     * @param strategy Strategy.
+     * @return Node.
+     * @throws IgniteCheckedException If failed to find the node.
+     */
+    private ClusterNode selectNode(IgfsContext igfsCtx, IgfsClientNodeSelectionStrategy strategy)
+        throws IgniteCheckedException {
+        // TODO
     }
 
     /**
