@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * IGFS client closure response type.
  */
-public enum IgfsClientClosureResponseType {
+public enum IgfsClientResponseType {
     /** Object. */
     OBJ,
 
@@ -39,7 +39,7 @@ public enum IgfsClientClosureResponseType {
     MARSH_ERR;
 
     /** Enum values. */
-    private static final IgfsClientClosureResponseType[] VALS = values();
+    private static final IgfsClientResponseType[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -47,7 +47,7 @@ public enum IgfsClientClosureResponseType {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static IgfsClientClosureResponseType fromOrdinal(int ord) {
+    @Nullable public static IgfsClientResponseType fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

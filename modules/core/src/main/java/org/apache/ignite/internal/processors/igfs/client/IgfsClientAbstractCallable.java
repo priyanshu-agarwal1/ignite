@@ -136,6 +136,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
     }
 
     /** {@inheritDoc} */
+    // TODO.
     @Override public final T call() throws Exception {
         assert ignite != null;
 
@@ -151,7 +152,14 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      * @return Result.
      * @throws Exception If failed.
      */
-    protected abstract T call0(IgfsContext ctx) throws Exception;
+    public abstract T call0(IgfsContext ctx) throws Exception;
+
+    /**
+     * @return IGFS name.
+     */
+    public String igfsName() {
+        return igfsName;
+    }
 
     /** {@inheritDoc} */
     @Override public final void writeBinary(BinaryWriter writer) throws BinaryObjectException {

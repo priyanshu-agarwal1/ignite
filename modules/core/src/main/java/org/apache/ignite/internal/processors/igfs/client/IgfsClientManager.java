@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
+import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,12 +40,12 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 /**
  * Manager to handle IGFS client closures.
  */
-public class IgfsClientClosureManager extends IgfsManager {
+public class IgfsClientManager extends IgfsManager {
     /** Pending input operations received when manager is not started yet. */
-    private final ConcurrentLinkedDeque<IgfsClientClosureRequest> pending = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<IgfsClientRequest> pending = new ConcurrentLinkedDeque<>();
 
     /** Outgoing operations. */
-    private final Map<Long, IgfsClientClosureOutOperation> outOps = new ConcurrentHashMap<>();
+    private final Map<Long, IgfsClientOutOperation> outOps = new ConcurrentHashMap<>();
 
     /** Marshaller. */
     private final Marshaller marsh;
@@ -61,7 +65,7 @@ public class IgfsClientClosureManager extends IgfsManager {
      *
      * @param ctx Kernal context.
      */
-    public IgfsClientClosureManager(GridKernalContext ctx) {
+    public IgfsClientManager(GridKernalContext ctx) {
         super(ctx);
 
         marsh = ctx.config().getMarshaller();
@@ -117,22 +121,20 @@ public class IgfsClientClosureManager extends IgfsManager {
      *
      * @param msgId Message ID.
      * @param res Response.
-     * @param marsh Marshaller.
      * @return Response.
      */
-    private IgfsClientClosureResponse createResponse(long msgId, @Nullable Object res, @Nullable Throwable resErr,
-        Marshaller marsh) {
+    private IgfsClientResponse createResponse(long msgId, @Nullable Object res, @Nullable Throwable resErr) {
         try {
             if (resErr != null)
-                return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.ERR, null,
+                return new IgfsClientResponse(msgId, IgfsClientResponseType.ERR, null,
                     marsh.marshal(resErr));
             else {
                 if (res == null)
-                    return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.NULL, null, null);
+                    return new IgfsClientResponse(msgId, IgfsClientResponseType.NULL, null, null);
                 else if (res instanceof Boolean)
-                    return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.BOOL, res, null);
+                    return new IgfsClientResponse(msgId, IgfsClientResponseType.BOOL, res, null);
                 else
-                    return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.OBJ, null,
+                    return new IgfsClientResponse(msgId, IgfsClientResponseType.OBJ, null,
                         marsh.marshal(res));
             }
         }
@@ -140,7 +142,7 @@ public class IgfsClientClosureManager extends IgfsManager {
             U.error(log, "Failed to marshal IGFS closure result [msgId=" + msgId + ", res=" + res +
                 ", resErr=" + resErr + ']', e);
 
-            return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.MARSH_ERR, null, null);
+            return new IgfsClientResponse(msgId, IgfsClientResponseType.MARSH_ERR, null, null);
         }
     }
 
@@ -154,11 +156,11 @@ public class IgfsClientClosureManager extends IgfsManager {
     }
 
     /**
-     * Handle closure request.
+     * Handle request.
      *
      * @param req Request.
      */
-    private void onClosureRequest(IgfsClientClosureRequest req) {
+    private void onRequest(IgfsClientRequest req) {
         rwLock.readLock().lock();
 
         try {
@@ -166,7 +168,7 @@ public class IgfsClientClosureManager extends IgfsManager {
                 return; // Discovery listener on remote node will handle node leave.
 
             if (ready)
-                onClosureRequest0(req); // Normal execution flow.
+                processRequest(req); // Normal execution flow.
             else
                 pending.add(req); // Add to pending set if manager is not fully started yet.
         }
@@ -176,16 +178,51 @@ public class IgfsClientClosureManager extends IgfsManager {
     }
 
     /**
+     * Handle response.
+     *
+     * @param resp Response.
+     */
+    private void onResponse(IgfsClientResponse resp) {
+        // TODO.
+    }
+
+    /**
      * Actual request processing. Happens inside appropriate thread pool.
      *
      * @param req Request.
      */
-    private void onClosureRequest0(IgfsClientClosureRequest req) {
-        // TODO
+    private void processRequest(IgfsClientRequest req) {
+        IgfsClientResponse resp;
+
+        try {
+            IgfsClientAbstractCallable target = req.target();
+
+            IgfsImpl igfs = (IgfsImpl) ctx.igfs().igfs(target.igfsName());
+
+            if (igfs == null)
+                throw new IgfsException("IGFS with the given name is not configured on the node: " + target.igfsName());
+
+            Object res = target.call0(igfs.context());
+
+            resp = createResponse(req.messageId(), res, null);
+        }
+        catch (Exception e) {
+            // Wrap exception.
+            resp = createResponse(req.messageId(), null, e);
+        }
+
+        // Send response.
+        try {
+            ctx.io().send(req.nodeId(), GridTopic.TOPIC_IGFS_CLI, resp, GridIoPolicy.PUBLIC_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send IGFS client response [nodeId=" + req.nodeId() +
+                ", msgId=" + req.messageId() + ']', e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsClientClosureManager.class, this);
+        return S.toString(IgfsClientManager.class, this);
     }
 }

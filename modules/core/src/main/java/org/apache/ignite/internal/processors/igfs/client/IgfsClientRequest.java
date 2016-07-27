@@ -29,7 +29,7 @@ import java.util.UUID;
 /**
  * IGFS client closure execute request.
  */
-public class IgfsClientClosureRequest implements Message {
+public class IgfsClientRequest implements Message {
     /** Base fields (all except of target) count. */
     private static final byte BASE_FIELDS_CNT = 3;
 
@@ -46,7 +46,7 @@ public class IgfsClientClosureRequest implements Message {
     /**
      * Default constructor.
      */
-    public IgfsClientClosureRequest() {
+    public IgfsClientRequest() {
         // No-op.
     }
 
@@ -57,7 +57,7 @@ public class IgfsClientClosureRequest implements Message {
      * @param msgId Message ID.
      * @param target Target callable.
      */
-    public IgfsClientClosureRequest(UUID nodeId, long msgId, IgfsClientAbstractCallable target) {
+    public IgfsClientRequest(UUID nodeId, long msgId, IgfsClientAbstractCallable target) {
         assert nodeId != null;
         assert target != null;
 
@@ -193,11 +193,11 @@ public class IgfsClientClosureRequest implements Message {
                 }
         }
 
-        return reader.afterMessageRead(IgfsClientClosureRequest.class);
+        return reader.afterMessageRead(IgfsClientRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsClientClosureRequest.class, this);
+        return S.toString(IgfsClientRequest.class, this);
     }
 }

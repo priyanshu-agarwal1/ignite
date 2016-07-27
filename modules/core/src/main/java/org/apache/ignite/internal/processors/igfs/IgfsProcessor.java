@@ -33,7 +33,7 @@ import org.apache.ignite.igfs.mapreduce.IgfsJob;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientClosureManager;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -85,7 +85,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
         new ConcurrentHashMap8<>();
 
     /** Client closure manager. */
-    private final IgfsClientClosureManager cloMgr;
+    private final IgfsClientManager cloMgr;
 
     /**
      * @param ctx Kernal context.
@@ -93,7 +93,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     public IgfsProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        cloMgr = new IgfsClientClosureManager(ctx);
+        cloMgr = new IgfsClientManager(ctx);
     }
 
     /** {@inheritDoc} */

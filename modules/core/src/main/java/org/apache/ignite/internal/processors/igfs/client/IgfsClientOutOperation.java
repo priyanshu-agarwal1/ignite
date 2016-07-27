@@ -25,7 +25,7 @@ import java.util.UUID;
 /**
  * IGFS client closure outgoing opeartion descriptor.
  */
-public class IgfsClientClosureOutOperation {
+public class IgfsClientOutOperation {
     /** Target node ID. */
     private final UUID nodeId;
 
@@ -42,7 +42,7 @@ public class IgfsClientClosureOutOperation {
      * @param target Target operation.
      * @param fut Future completed when operation is ready.
      */
-    public IgfsClientClosureOutOperation(UUID nodeId, IgfsClientAbstractCallable target, IgniteInternalFuture fut) {
+    public IgfsClientOutOperation(UUID nodeId, IgfsClientAbstractCallable target, IgniteInternalFuture fut) {
         this.nodeId = nodeId;
         this.target = target;
         this.fut = fut;
@@ -71,6 +71,6 @@ public class IgfsClientClosureOutOperation {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsClientClosureOutOperation.class, this);
+        return S.toString(IgfsClientOutOperation.class, this);
     }
 }

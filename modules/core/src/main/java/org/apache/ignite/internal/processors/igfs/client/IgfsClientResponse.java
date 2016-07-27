@@ -30,12 +30,12 @@ import java.nio.ByteBuffer;
 /**
  * IGFS client closure execute response.
  */
-public class IgfsClientClosureResponse implements Message {
+public class IgfsClientResponse implements Message {
     /** Message ID. */
     private long msgId;
 
     /** Response type. */
-    private IgfsClientClosureResponseType typ;
+    private IgfsClientResponseType typ;
 
     /** Result. */
     @GridToStringInclude
@@ -48,7 +48,7 @@ public class IgfsClientClosureResponse implements Message {
     /**
      * Default constructor.
      */
-    public IgfsClientClosureResponse() {
+    public IgfsClientResponse() {
         // No-op.
     }
 
@@ -60,7 +60,7 @@ public class IgfsClientClosureResponse implements Message {
      * @param res Result.
      * @param resBytes Result bytes.
      */
-    public IgfsClientClosureResponse(long msgId, IgfsClientClosureResponseType typ, @Nullable Object res,
+    public IgfsClientResponse(long msgId, IgfsClientResponseType typ, @Nullable Object res,
         @Nullable byte[] resBytes) {
         this.msgId = msgId;
         this.typ = typ;
@@ -78,7 +78,7 @@ public class IgfsClientClosureResponse implements Message {
     /**
      * @return Type.
      */
-    public IgfsClientClosureResponseType type() {
+    public IgfsClientResponseType type() {
         return typ;
     }
 
@@ -103,7 +103,7 @@ public class IgfsClientClosureResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return (byte)(typ == IgfsClientClosureResponseType.NULL || typ == IgfsClientClosureResponseType.MARSH_ERR ?
+        return (byte)(typ == IgfsClientResponseType.NULL || typ == IgfsClientResponseType.MARSH_ERR ?
             2 : 3);
     }
 
@@ -128,6 +128,6 @@ public class IgfsClientClosureResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsClientClosureResponse.class, this);
+        return S.toString(IgfsClientResponse.class, this);
     }
 }
