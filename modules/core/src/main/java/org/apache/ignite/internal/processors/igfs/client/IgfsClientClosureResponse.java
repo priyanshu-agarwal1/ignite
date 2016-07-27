@@ -17,16 +17,113 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
 
 /**
  * IGFS client closure execute response.
  */
 public class IgfsClientClosureResponse implements Message {
+    /** Message ID. */
+    private long msgId;
+
+    /** Response type. */
+    private IgfsClientClosureResponseType typ;
+
+    /** Result. */
+    private Object res;
+
+    /** Result bytes. */
+    private byte[] resBytes;
+
     /**
      * Default constructor.
      */
     public IgfsClientClosureResponse() {
         // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param msgId Message ID.
+     * @param typ Type.
+     * @param res Result.
+     * @param resBytes Result bytes.
+     */
+    public IgfsClientClosureResponse(long msgId, IgfsClientClosureResponseType typ, @Nullable Object res,
+        @Nullable byte[] resBytes) {
+        this.msgId = msgId;
+        this.typ = typ;
+        this.res = res;
+        this.resBytes = resBytes;
+    }
+
+    /**
+     * @return Message ID.
+     */
+    public long messageId() {
+        return msgId;
+    }
+
+    /**
+     * @return Type.
+     */
+    public IgfsClientClosureResponseType type() {
+        return typ;
+    }
+
+    /**
+     * @return Result.
+     */
+    @Nullable public Object result() {
+        return res;
+    }
+
+    /**
+     * @return Result bytes.
+     */
+    @Nullable public byte[] resultBytes() {
+        return resBytes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return -28;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return (byte)(typ == IgfsClientClosureResponseType.NULL || typ == IgfsClientClosureResponseType.MARSH_ERR ?
+            2 : 3);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsClientClosureResponse.class, this);
     }
 }

@@ -24,7 +24,9 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -94,6 +96,39 @@ public class IgfsClientClosureManager extends IgfsManager {
         // TODO
 
         return null;
+    }
+
+    /**
+     * Create closure response.
+     *
+     * @param msgId Message ID.
+     * @param res Response.
+     * @param marsh Marshaller.
+     * @return Response.
+     */
+    public IgfsClientClosureResponse createResponse(long msgId, @Nullable Object res, @Nullable Throwable resErr,
+        Marshaller marsh) {
+        try {
+
+            if (resErr != null)
+                return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.ERR, null,
+                    marsh.marshal(resErr));
+            else {
+                if (res == null)
+                    return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.NULL, null, null);
+                else if (res instanceof Boolean)
+                    return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.BOOL, res, null);
+                else
+                    return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.OBJ, null,
+                        marsh.marshal(res));
+            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to marshal IGFS closure result [msgId=" + msgId + ", res=" + res +
+                ", resErr=" + resErr + ']', e);
+
+            return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.MARSH_ERR, null, null);
+        }
     }
 
     /** {@inheritDoc} */
