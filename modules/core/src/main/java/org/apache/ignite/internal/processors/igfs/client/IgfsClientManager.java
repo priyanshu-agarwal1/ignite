@@ -58,12 +58,6 @@ public class IgfsClientManager extends IgfsManager {
     /** Marshaller. */
     private final Marshaller marsh;
 
-    /** Whether manager is fully started and ready to process requests. */
-    private volatile boolean ready;
-
-    /** Stopping flag. */
-    private volatile boolean stopping;
-
     /** RW lock for synchronization. */
     private final StripedCompositeReadWriteLock rwLock =
         new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors() * 2);
@@ -75,10 +69,16 @@ public class IgfsClientManager extends IgfsManager {
     private final MessageListener msgLsnr = new MessageListener();
 
     /** Pending input operations received when manager is not started yet. */
-    private final ConcurrentLinkedDeque<IgfsClientInOperation> pending = new ConcurrentLinkedDeque<>();
+    private final ConcurrentLinkedDeque<IgfsClientInOperation> pendingOps = new ConcurrentLinkedDeque<>();
 
     /** Worker to process pending requests. */
     private PendingRequestsWorker pendingWorker;
+
+    /** Whether manager is fully started and ready to process requests. */
+    private volatile boolean ready;
+
+    /** Stopping flag. */
+    private volatile boolean stopping;
 
     /**
      * Constructor.
@@ -105,7 +105,7 @@ public class IgfsClientManager extends IgfsManager {
         try {
             ready = true;
 
-            if (!pending.isEmpty()) {
+            if (!pendingOps.isEmpty()) {
                 pendingWorker = new PendingRequestsWorker(ctx.gridName(), "igfs-client-pending-request-worker", log);
 
                 new IgniteThread(pendingWorker).start();
@@ -143,7 +143,7 @@ public class IgfsClientManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        pending.clear();
+        pendingOps.clear();
         outOps.clear();
     }
 
@@ -155,7 +155,20 @@ public class IgfsClientManager extends IgfsManager {
      * @return Result.
      */
     public <T> T execute(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo) throws IgniteCheckedException {
-        return executeAsync(igfsCtx, clo).get();
+        return execute(igfsCtx, clo, IgfsClientNodeSelectionStrategy.RANDOM);
+    }
+
+    /**
+     * Execute IGFS closure.
+     *
+     * @param igfsCtx IGFS context.
+     * @param clo Closure.
+     * @param strategy Node selection strategy.
+     * @return Result.
+     */
+    public <T> T execute(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo,
+        IgfsClientNodeSelectionStrategy strategy) throws IgniteCheckedException {
+        return executeAsync(igfsCtx, clo, strategy).get();
     }
 
     /**
@@ -166,6 +179,19 @@ public class IgfsClientManager extends IgfsManager {
      * @return Future.
      */
     public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo) {
+        return executeAsync(igfsCtx, clo, IgfsClientNodeSelectionStrategy.RANDOM);
+    }
+
+    /**
+     * Execute IGFS closure asynchronously.
+     *
+     * @param igfsCtx IGFS context.
+     * @param clo Closure.
+     * @param strategy Node selection strategy.
+     * @return Future.
+     */
+    public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo,
+        IgfsClientNodeSelectionStrategy strategy) {
 
         // TODO
 
@@ -228,7 +254,7 @@ public class IgfsClientManager extends IgfsManager {
                 processRequest(nodeId, req); // Normal execution flow.
             else
                 // Add to pending set if manager is not operational yet.
-                pending.addLast(new IgfsClientInOperation(nodeId, req));
+                pendingOps.addLast(new IgfsClientInOperation(nodeId, req));
         }
         finally {
             rwLock.readLock().unlock();
@@ -392,7 +418,7 @@ public class IgfsClientManager extends IgfsManager {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             IgfsClientInOperation inOp;
 
-            while ((inOp = pending.pollFirst()) != null)
+            while ((inOp = pendingOps.pollFirst()) != null)
                 processRequest(inOp.nodeId(), inOp.request());
         }
     }
