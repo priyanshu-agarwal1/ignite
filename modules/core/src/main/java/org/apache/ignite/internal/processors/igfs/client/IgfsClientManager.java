@@ -47,7 +47,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * Manager to handle IGFS client closures.
@@ -79,10 +78,7 @@ public class IgfsClientManager extends IgfsManager {
     private final ConcurrentLinkedDeque<IgfsClientInOperation> pending = new ConcurrentLinkedDeque<>();
 
     /** Worker to process pending requests. */
-    private final PendingRequestsWorker pendingWorker = new PendingRequestsWorker();
-
-    /** Whether pending requests worker started. */
-    private boolean pendingWorkerStarted;
+    private PendingRequestsWorker pendingWorker;
 
     /**
      * Constructor.
@@ -110,9 +106,9 @@ public class IgfsClientManager extends IgfsManager {
             ready = true;
 
             if (!pending.isEmpty()) {
-                new IgniteThread(pendingWorker).start();
+                pendingWorker = new PendingRequestsWorker(ctx.gridName(), "igfs-client-pending-request-worker", log);
 
-                pendingWorkerStarted = true;
+                new IgniteThread(pendingWorker).start();
             }
         }
         finally {
@@ -126,22 +122,22 @@ public class IgfsClientManager extends IgfsManager {
 
         ctx.io().removeMessageListener(GridTopic.TOPIC_IGFS_CLI, msgLsnr);
 
-        boolean pendingWorkerStarted0;
+        PendingRequestsWorker pendingWorker0;
 
         rwLock.writeLock().lock();
 
         try {
             stopping = true;
 
-            pendingWorkerStarted0 = pendingWorkerStarted;
+            pendingWorker0 = pendingWorker;
         }
         finally {
             rwLock.writeLock().unlock();
         }
 
-        if (pendingWorkerStarted0) {
-            U.cancel(pendingWorker);
-            U.join(pendingWorker, log);
+        if (pendingWorker0 != null) {
+            U.cancel(pendingWorker0);
+            U.join(pendingWorker0, log);
         }
     }
 
