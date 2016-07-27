@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -36,9 +38,11 @@ public class IgfsClientClosureResponse implements Message {
     private IgfsClientClosureResponseType typ;
 
     /** Result. */
+    @GridToStringInclude
     private Object res;
 
     /** Result bytes. */
+    @GridToStringExclude
     private byte[] resBytes;
 
     /**
