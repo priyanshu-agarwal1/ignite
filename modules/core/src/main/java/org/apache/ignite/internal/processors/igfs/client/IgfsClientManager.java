@@ -24,6 +24,7 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
@@ -37,6 +38,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
 /**
  * Manager to handle IGFS client closures.
@@ -61,6 +66,9 @@ public class IgfsClientManager extends IgfsManager {
     private final StripedCompositeReadWriteLock rwLock =
         new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors() * 2);
 
+    /** Discovery listener. */
+    private final GridLocalEventListener discoLsnr = new DiscoveryListener();
+
     /** IO message listener. */
     private final MessageListener msgLsnr = new MessageListener();
 
@@ -79,26 +87,48 @@ public class IgfsClientManager extends IgfsManager {
     @Override protected void start0() throws IgniteCheckedException {
         ctx.io().addMessageListener(GridTopic.TOPIC_IGFS_CLI, msgLsnr);
 
-        // TODO: Discovery listener.
+        ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_METRICS_UPDATED);
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        // TODO: Set ready flag.
+        rwLock.writeLock().lock();
+
+        try {
+            ready = true;
+
+            if (!pending.isEmpty()) {
+                // TODO: Start separate thread.
+            }
+        }
+        finally {
+            rwLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
+        ctx.event().removeLocalEventListener(discoLsnr);
+
         ctx.io().removeMessageListener(GridTopic.TOPIC_IGFS_CLI, msgLsnr);
 
-        // TODO: Discovery listener.
+        rwLock.writeLock().lock();
 
-        // TODO: Set stopping flag
+        try {
+            stopping = true;
+        }
+        finally {
+            rwLock.writeLock().unlock();
+        }
+
+        // Stop pending worker (if any).
+        // TODO
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        // TODO: Cleanup everything.
+        pending.clear();
+        outOps.clear();
     }
 
     /**
