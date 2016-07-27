@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.UUID;
@@ -33,7 +34,7 @@ public class IgfsClientOutOperation {
     private final IgfsClientAbstractCallable target;
 
     /** Future completed when operation is ready. */
-    private final IgniteInternalFuture fut;
+    private final GridFutureAdapter fut;
 
     /**
      * Constructor.
@@ -42,7 +43,7 @@ public class IgfsClientOutOperation {
      * @param target Target operation.
      * @param fut Future completed when operation is ready.
      */
-    public IgfsClientOutOperation(UUID nodeId, IgfsClientAbstractCallable target, IgniteInternalFuture fut) {
+    public IgfsClientOutOperation(UUID nodeId, IgfsClientAbstractCallable target, GridFutureAdapter fut) {
         this.nodeId = nodeId;
         this.target = target;
         this.fut = fut;
@@ -65,7 +66,7 @@ public class IgfsClientOutOperation {
     /**
      * @return Future completed when operation is ready.
      */
-    public IgniteInternalFuture future() {
+    public GridFutureAdapter future() {
         return fut;
     }
 

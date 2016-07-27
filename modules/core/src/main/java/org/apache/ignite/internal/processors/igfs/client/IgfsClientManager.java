@@ -23,6 +23,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
@@ -60,6 +61,9 @@ public class IgfsClientManager extends IgfsManager {
     private final StripedCompositeReadWriteLock rwLock =
         new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors() * 2);
 
+    /** IO message listener. */
+    private final MessageListener msgLsnr = new MessageListener();
+
     /**
      * Constructor.
      *
@@ -73,22 +77,28 @@ public class IgfsClientManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        // TODO
+        ctx.io().addMessageListener(GridTopic.TOPIC_IGFS_CLI, msgLsnr);
+
+        // TODO: Discovery listener.
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        // TODO
+        // TODO: Set ready flag.
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        // TODO
+        ctx.io().removeMessageListener(GridTopic.TOPIC_IGFS_CLI, msgLsnr);
+
+        // TODO: Discovery listener.
+
+        // TODO: Set stopping flag
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        // TODO
+        // TODO: Cleanup everything.
     }
 
     /**
@@ -182,8 +192,57 @@ public class IgfsClientManager extends IgfsManager {
      *
      * @param resp Response.
      */
+    @SuppressWarnings("unchecked")
     private void onResponse(IgfsClientResponse resp) {
-        // TODO.
+        rwLock.readLock().lock();
+
+        try {
+            IgfsClientOutOperation op = outOps.remove(resp.messageId());
+
+            // Op might be null in case of concurreny local node stop or remote node stop.= discovery notification.
+            if (op != null) {
+                // Restore result.
+                Object res = null;
+                Throwable err = null;
+
+                try {
+                    switch (resp.type()) {
+                        case BOOL:
+                            res = resp.result();
+
+                            break;
+
+                        case OBJ:
+                            res = marsh.unmarshal(resp.resultBytes(), U.resolveClassLoader(ctx.config()));
+
+                            break;
+
+                        case ERR:
+                            err = marsh.unmarshal(resp.resultBytes(), U.resolveClassLoader(ctx.config()));
+
+                            break;
+
+                        case MARSH_ERR:
+                            err = new IgfsException("Failed to marshal IGFS task result on remote node " +
+                                "(see remote node logs for more information) [nodeId + " + op.nodeId() + ']');
+
+                            break;
+
+                        default:
+                            assert resp.type() == IgfsClientResponseType.NULL;
+                    }
+                }
+                catch (Exception e) {
+                    // Something went wrong during unmarshalling.
+                    err = new IgfsException("Failed to unmarshal IGFS task result." , e);
+                }
+
+                op.future().onDone(res, err);
+            }
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
     }
 
     /**
@@ -224,5 +283,23 @@ public class IgfsClientManager extends IgfsManager {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientManager.class, this);
+    }
+
+    /**
+     * Handles job execution requests.
+     */
+    private class MessageListener implements GridMessageListener {
+        /** {@inheritDoc} */
+        @Override public void onMessage(UUID nodeId, Object msg) {
+            assert nodeId != null;
+            assert msg != null;
+
+            if (msg instanceof IgfsClientRequest)
+                onRequest((IgfsClientRequest)msg);
+            else if (msg instanceof IgfsClientResponse)
+                onResponse((IgfsClientResponse)msg);
+            else
+                U.error(log, "IGFS client message listener received unknown message: " + msg);
+        }
     }
 }
