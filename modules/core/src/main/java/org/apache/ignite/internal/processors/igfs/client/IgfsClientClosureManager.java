@@ -123,7 +123,6 @@ public class IgfsClientClosureManager extends IgfsManager {
     private IgfsClientClosureResponse createResponse(long msgId, @Nullable Object res, @Nullable Throwable resErr,
         Marshaller marsh) {
         try {
-
             if (resErr != null)
                 return new IgfsClientClosureResponse(msgId, IgfsClientClosureResponseType.ERR, null,
                     marsh.marshal(resErr));
