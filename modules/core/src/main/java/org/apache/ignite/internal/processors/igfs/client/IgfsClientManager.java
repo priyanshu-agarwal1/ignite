@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -33,6 +36,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -209,14 +213,18 @@ public class IgfsClientManager extends IgfsManager {
                 }
 
                 // Get suitable node.
-                ClusterNode node = selectNode(op.igfsContext(), op.strategy());
+                ClusterNode node;
 
-                if (node == null) {
-                    op.future().onDone(new IgfsException("Failed to execute operation because there are no " +
-                        "IGFS metadata nodes [igfs=" + igfsCtx.igfs().name() + ']'));
+                try {
+                    node = selectNode(op.igfsContext(), op.strategy());
+                }
+                catch (Exception e) {
+                    op.future().onDone(e);
 
                     return;
                 }
+
+                assert node != null;
 
                 op.nodeId(node.id());
 
@@ -272,9 +280,28 @@ public class IgfsClientManager extends IgfsManager {
      * @return Node.
      */
     @Nullable private ClusterNode selectNode(IgfsContext igfsCtx, IgfsClientNodeSelectionStrategy strategy) {
-        // TODO
+        FileSystemConfiguration igfsCfg = igfsCtx.configuration();
 
-        return null;
+        IgniteEx ignite = igfsCtx.kernalContext().grid();
+
+        switch (strategy) {
+            case RANDOM:
+                ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(
+                    igfsCfg.getName(), igfsCfg.getMetaCacheName());
+
+                Collection<ClusterNode> nodes = cluster.nodes();
+
+                if (nodes.isEmpty())
+                    throw new IgfsException("Failed to execute operation because there are no " +
+                        "IGFS metadata nodes [igfs=" + igfsCtx.igfs().name() + ']');
+
+                return F.rand(nodes);
+
+            default:
+                assert strategy == IgfsClientNodeSelectionStrategy.ROOT_ID;
+
+                return ignite.affinity(igfsCfg.getMetaCacheName()).mapKeyToNode(IgfsUtils.ROOT_ID);
+        }
     }
 
     /**
