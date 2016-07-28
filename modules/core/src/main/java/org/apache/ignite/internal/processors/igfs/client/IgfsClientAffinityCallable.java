@@ -119,8 +119,12 @@ public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Colle
             case 0:
                 start = reader.readLong("start");
 
+                break;
+
             case 1:
                 len = reader.readLong("len");
+
+                break;
 
             default:
                 assert fieldId == 2;

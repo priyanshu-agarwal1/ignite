@@ -96,7 +96,7 @@ public class IgfsClientUpdateCallable extends IgfsClientAbstractCallable<IgfsFil
     @Override protected void readFrom0(MessageReader reader, int fieldId) {
         assert fieldId == 0;
 
-        props = reader.readMap("recursive", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+        props = reader.readMap("props", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
     }
 
     /** {@inheritDoc} */

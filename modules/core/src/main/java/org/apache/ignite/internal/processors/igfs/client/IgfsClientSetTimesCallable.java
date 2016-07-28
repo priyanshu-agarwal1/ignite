@@ -109,6 +109,8 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
             case 0:
                 accessTime = reader.readLong("accessTime");
 
+                break;
+
             default:
                 assert fieldId == 1;
 

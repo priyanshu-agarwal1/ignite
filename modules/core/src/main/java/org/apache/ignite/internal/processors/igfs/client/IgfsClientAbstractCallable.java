@@ -99,7 +99,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
                 return new IgfsClientRenameCallable();
 
             case IgfsClientSetTimesCallable.TYPE_ID:
-                return new IgfsClientUpdateCallable();
+                return new IgfsClientSetTimesCallable();
 
             case IgfsClientSizeCallable.TYPE_ID:
                 return new IgfsClientSizeCallable();
@@ -264,11 +264,15 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
             case 0:
                 igfsName = reader.readString("igfsName");
 
+                break;
+
             case 1:
                 String pathStr = reader.readString("path");
 
                 if (reader.isLastRead())
                     path = new IgfsPath(pathStr);
+
+                break;
 
             default:
                 readFrom0(reader, fieldId - BASE_FIELDS_CNT);
