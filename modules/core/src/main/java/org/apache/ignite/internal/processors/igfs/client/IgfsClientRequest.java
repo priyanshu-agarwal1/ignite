@@ -24,7 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 
 /**
  * IGFS client closure execute request.
@@ -50,12 +49,10 @@ public class IgfsClientRequest implements Message {
     /**
      * Constructor.
      *
-     * @param nodeId Originating node ID.
      * @param msgId Message ID.
      * @param target Target callable.
      */
-    public IgfsClientRequest(UUID nodeId, long msgId, IgfsClientAbstractCallable target) {
-        assert nodeId != null;
+    public IgfsClientRequest(long msgId, IgfsClientAbstractCallable target) {
         assert target != null;
 
         this.msgId = msgId;

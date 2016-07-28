@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -45,6 +46,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -71,6 +73,9 @@ public class IgfsClientManager extends IgfsManager {
 
     /** Pending input operations received when manager is not started yet. */
     private final ConcurrentLinkedDeque<IgfsClientInOperation> pendingOps = new ConcurrentLinkedDeque<>();
+
+    /** Message ID generator. */
+    private final AtomicLong msgIdGen = new AtomicLong();
 
     /** Worker to process pending requests. */
     private PendingRequestsWorker pendingWorker;
@@ -191,19 +196,44 @@ public class IgfsClientManager extends IgfsManager {
      * @param strategy Node selection strategy.
      * @return Future.
      */
+    @SuppressWarnings("unchecked")
     public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo,
         IgfsClientNodeSelectionStrategy strategy) {
-        try {
+        while (true) {
+            rwLock.readLock().lock();
 
-            ClusterNode node = selectNode(igfsCtx, strategy);
+            try {
+                // Get suitable node.
+                ClusterNode node = selectNode(igfsCtx, strategy);
+
+                if (node == null)
+                    throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes [igfs="
+                        + igfsCtx.igfs().name() + ']');
+
+                // Add operation to pending set.
+                long msgId = msgIdGen.incrementAndGet();
+
+                IgfsClientOutOperation op = new IgfsClientOutOperation(node.id(), clo, new GridFutureAdapter());
+
+                outOps.put(msgId, op);
+
+                // Send request.
+                try {
+                    ctx.io().send(node, GridTopic.TOPIC_IGFS_CLI, new IgfsClientRequest(msgId, clo),
+                        GridIoPolicy.PUBLIC_POOL);
+
+                    return op.future();
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send message to node, will retry [nodeId=" + node.id() +
+                            ", err=" + e + ']');
+                }
+            }
+            finally {
+                rwLock.readLock().unlock();
+            }
         }
-        catch (IgniteCheckedException e) {
-            // TODO
-        }
-
-        // TODO
-
-        return null;
     }
 
     /**
@@ -212,10 +242,8 @@ public class IgfsClientManager extends IgfsManager {
      * @param igfsCtx IGFS context.
      * @param strategy Strategy.
      * @return Node.
-     * @throws IgniteCheckedException If failed to find the node.
      */
-    private ClusterNode selectNode(IgfsContext igfsCtx, IgfsClientNodeSelectionStrategy strategy)
-        throws IgniteCheckedException {
+    @Nullable private ClusterNode selectNode(IgfsContext igfsCtx, IgfsClientNodeSelectionStrategy strategy) {
         // TODO
 
         return null;
