@@ -103,8 +103,7 @@ public class IgfsClientResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return (byte)(typ == IgfsClientResponseType.NULL || typ == IgfsClientResponseType.MARSH_ERR ?
-            2 : 3);
+        return (byte)(typ == IgfsClientResponseType.NULL || typ == IgfsClientResponseType.MARSH_ERR ? 2 : 3);
     }
 
     /** {@inheritDoc} */
@@ -114,16 +113,94 @@ public class IgfsClientResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        // TODO
+        writer.setBuffer(buf);
 
-        return false;
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeLong("msgId", msgId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeInt("typ", typ.ordinal()))
+                    return false;
+
+                writer.incrementState();
+
+            default: {
+                if (typ == IgfsClientResponseType.BOOL) {
+                    if (!writer.writeBoolean("res", (boolean)res))
+                        return false;
+                }
+                else if (typ == IgfsClientResponseType.OBJ || typ == IgfsClientResponseType.ERR) {
+                    if (!writer.writeByteArray("resBytes", resBytes))
+                        return false;
+                }
+
+                writer.incrementState();
+            }
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        // TODO
+        reader.setBuffer(buf);
 
-        return false;
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                msgId = reader.readLong("msgId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                int typOrd;
+
+                typOrd = reader.readInt("typ");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                typ = IgfsClientResponseType.fromOrdinal(typOrd);
+
+                reader.incrementState();
+
+            default: {
+                if (typ == IgfsClientResponseType.BOOL) {
+                    res = reader.readBoolean("res");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+                }
+                else if (typ == IgfsClientResponseType.OBJ || typ == IgfsClientResponseType.ERR) {
+                    resBytes = reader.readByteArray("resBytes");
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    reader.incrementState();
+                }
+            }
+        }
+
+        return reader.afterMessageRead(IgfsClientResponse.class);
     }
 
     /** {@inheritDoc} */
