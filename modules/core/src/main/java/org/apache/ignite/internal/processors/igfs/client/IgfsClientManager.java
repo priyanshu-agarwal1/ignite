@@ -168,7 +168,7 @@ public class IgfsClientManager extends IgfsManager {
      * @param clo Closure.
      * @return Result.
      */
-    public <T> T execute(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo) throws IgniteCheckedException {
+    public <T> T execute(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo) {
         return execute(igfsCtx, clo, IgfsClientNodeSelectionStrategy.RANDOM);
     }
 
@@ -181,8 +181,13 @@ public class IgfsClientManager extends IgfsManager {
      * @return Result.
      */
     public <T> T execute(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo,
-        IgfsClientNodeSelectionStrategy strategy) throws IgniteCheckedException {
-        return executeAsync(igfsCtx, clo, strategy).get();
+        IgfsClientNodeSelectionStrategy strategy) {
+        try {
+            return executeAsync(igfsCtx, clo, strategy).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw IgfsUtils.toIgfsException(e);
+        }
     }
 
     /**

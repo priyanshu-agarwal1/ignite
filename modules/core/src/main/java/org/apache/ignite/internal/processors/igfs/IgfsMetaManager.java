@@ -18,13 +18,10 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.IgfsEvent;
@@ -41,7 +38,6 @@ import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -151,9 +147,6 @@ public class IgfsMetaManager extends IgfsManager {
     /** Client flag. */
     private final boolean client;
 
-    /** Compute facade for client tasks. */
-    private IgniteCompute cliCompute;
-
     /**
      * Constructor.
      *
@@ -250,37 +243,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result.
      */
     <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
-        try {
-            return clientCompute().call(task);
-        }
-        catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
-        }
-    }
-
-    /**
-     * Get compute facade for client tasks.
-     *
-     * @return Compute facade.
-     */
-    private IgniteCompute clientCompute() {
-        assert client;
-
-        IgniteCompute cliCompute0 = cliCompute;
-
-        if (cliCompute0 == null) {
-            IgniteEx ignite = ctx.grid();
-
-            ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
-
-            cliCompute0 = ignite.compute(cluster);
-
-            cliCompute = cliCompute0;
-        }
-
-        assert cliCompute0 != null;
-
-        return cliCompute0;
+        return igfsCtx.closure().execute(igfsCtx, task);
     }
 
     /**
