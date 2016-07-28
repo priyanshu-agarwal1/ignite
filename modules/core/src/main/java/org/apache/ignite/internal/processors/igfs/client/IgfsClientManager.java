@@ -325,7 +325,6 @@ public class IgfsClientManager extends IgfsManager {
                 while (iter.hasNext()) {
                     Map.Entry<Long, IgfsClientOutOperation> entry = iter.next();
 
-                    long msgId = entry.getKey();
                     IgfsClientOutOperation op = entry.getValue();
 
                     if (F.eq(nodeId, op.nodeId())) {
