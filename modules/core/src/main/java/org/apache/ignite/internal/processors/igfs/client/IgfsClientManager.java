@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsManager;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -42,6 +43,9 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -189,40 +193,44 @@ public class IgfsClientManager extends IgfsManager {
     }
 
     /**
-     * Execute IGFS closure asynchronously.
+     * Internal execution logic.
      *
-     * @param igfsCtx IGFS context.
-     * @param clo Closure.
-     * @param strategy Node selection strategy.
-     * @return Future.
+     * @param op Output operation.
      */
-    @SuppressWarnings("unchecked")
-    public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo,
-        IgfsClientNodeSelectionStrategy strategy) {
+    private void executeAsync0(IgfsClientOutOperation op) {
         while (true) {
             rwLock.readLock().lock();
 
             try {
-                // Get suitable node.
-                ClusterNode node = selectNode(igfsCtx, strategy);
+                if (stopping) {
+                    op.future().onDone(new IgfsException("Failed to execute IGFS task because node is stopping."));
 
-                if (node == null)
-                    throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes [igfs="
-                        + igfsCtx.igfs().name() + ']');
+                    return;
+                }
+
+                // Get suitable node.
+                ClusterNode node = selectNode(op.igfsContext(), op.strategy());
+
+                if (node == null) {
+                    op.future().onDone(new IgfsException("Failed to execute operation because there are no " +
+                        "IGFS metadata nodes [igfs=" + igfsCtx.igfs().name() + ']'));
+
+                    return;
+                }
+
+                op.nodeId(node.id());
 
                 // Add operation to pending set.
                 long msgId = msgIdGen.incrementAndGet();
-
-                IgfsClientOutOperation op = new IgfsClientOutOperation(node.id(), clo, new GridFutureAdapter());
 
                 outOps.put(msgId, op);
 
                 // Send request.
                 try {
-                    ctx.io().send(node, GridTopic.TOPIC_IGFS_CLI, new IgfsClientRequest(msgId, clo),
+                    ctx.io().send(node, GridTopic.TOPIC_IGFS_CLI, new IgfsClientRequest(msgId, op.target()),
                         GridIoPolicy.PUBLIC_POOL);
 
-                    return op.future();
+                    return;
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
@@ -234,6 +242,26 @@ public class IgfsClientManager extends IgfsManager {
                 rwLock.readLock().unlock();
             }
         }
+    }
+
+    /**
+     * Execute IGFS closure asynchronously.
+     *
+     * @param igfsCtx IGFS context.
+     * @param clo Closure.
+     * @param strategy Node selection strategy.
+     * @return Future.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> IgniteInternalFuture<T> executeAsync(IgfsContext igfsCtx, IgfsClientAbstractCallable<T> clo,
+        IgfsClientNodeSelectionStrategy strategy) {
+        GridFutureAdapter fut = new GridFutureAdapter();
+
+        IgfsClientOutOperation op = new IgfsClientOutOperation(igfsCtx, clo, strategy, fut);
+
+        executeAsync0(op);
+
+        return fut;
     }
 
     /**
@@ -285,7 +313,39 @@ public class IgfsClientManager extends IgfsManager {
      * @param nodeId Node ID.
      */
     private void onNodeLeft(UUID nodeId) {
-        // TODO
+        Collection<IgfsClientOutOperation> retryOps = new LinkedList<>();
+
+        rwLock.writeLock().lock();
+
+        try {
+            if (!stopping) {
+                // Get the list of affected requests.
+                Iterator<Map.Entry<Long, IgfsClientOutOperation>> iter = outOps.entrySet().iterator();
+
+                while (iter.hasNext()) {
+                    Map.Entry<Long, IgfsClientOutOperation> entry = iter.next();
+
+                    long msgId = entry.getKey();
+                    IgfsClientOutOperation op = entry.getValue();
+
+                    if (F.eq(nodeId, op.nodeId())) {
+                        iter.remove();
+
+                        retryOps.add(op);
+                    }
+                }
+            }
+        }
+        finally {
+            rwLock.writeLock().unlock();
+        }
+
+        // Re-send affected ops.
+        for (IgfsClientOutOperation retryOp : retryOps) {
+            retryOp.nodeId(null);
+
+            executeAsync0(retryOp);
+        }
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.igfs.client;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -27,25 +28,34 @@ import java.util.UUID;
  * IGFS client closure outgoing operation descriptor.
  */
 public class IgfsClientOutOperation {
-    /** Target node ID. */
-    private final UUID nodeId;
+    /** IGFS context. */
+    private final IgfsContext igfsCtx;
 
     /** Target operation. */
     private final IgfsClientAbstractCallable target;
 
+    /** Node selection strategy. */
+    private final IgfsClientNodeSelectionStrategy strategy;
+
     /** Future completed when operation is ready. */
     private final GridFutureAdapter fut;
+
+    /** Target node ID. */
+    private UUID nodeId;
 
     /**
      * Constructor.
      *
-     * @param nodeId Target node ID.
+     * @param igfsCtx IGFS context.
      * @param target Target operation.
+     * @param strategy Node selection strategy.
      * @param fut Future completed when operation is ready.
      */
-    public IgfsClientOutOperation(UUID nodeId, IgfsClientAbstractCallable target, GridFutureAdapter fut) {
-        this.nodeId = nodeId;
+    public IgfsClientOutOperation(IgfsContext igfsCtx, IgfsClientAbstractCallable target,
+        IgfsClientNodeSelectionStrategy strategy, GridFutureAdapter fut) {
+        this.igfsCtx = igfsCtx;
         this.target = target;
+        this.strategy = strategy;
         this.fut = fut;
     }
 
@@ -57,10 +67,31 @@ public class IgfsClientOutOperation {
     }
 
     /**
+     * @param nodeId Node ID.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
+     * @return IGFS context.
+     */
+    public IgfsContext igfsContext() {
+        return igfsCtx;
+    }
+
+    /**
      * @return Target operation.
      */
     public IgfsClientAbstractCallable target() {
         return target;
+    }
+
+    /**
+     * @return Node selection strategy.
+     */
+    public IgfsClientNodeSelectionStrategy strategy() {
+        return strategy;
     }
 
     /**
