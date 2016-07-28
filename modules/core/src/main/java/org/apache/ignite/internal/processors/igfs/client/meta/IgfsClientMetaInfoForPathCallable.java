@@ -53,7 +53,7 @@ public class IgfsClientMetaInfoForPathCallable extends IgfsClientAbstractCallabl
     }
 
     /** {@inheritDoc} */
-    @Override protected IgfsEntryInfo call0(IgfsContext ctx) throws Exception {
+    @Override public IgfsEntryInfo call0(IgfsContext ctx) throws Exception {
         IgfsMetaManager meta =  ctx.meta();
 
         return meta.infoForPath(path);

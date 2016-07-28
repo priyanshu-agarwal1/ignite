@@ -53,7 +53,7 @@ public class IgfsClientListFilesCallable extends IgfsClientAbstractCallable<Coll
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<IgfsFile> call0(IgfsContext ctx) throws Exception {
+    @Override public Collection<IgfsFile> call0(IgfsContext ctx) throws Exception {
         return ctx.igfs().listFiles(path);
     }
 

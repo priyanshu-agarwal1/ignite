@@ -55,7 +55,7 @@ public class IgfsClientMetaIdsForPathCallable extends IgfsClientAbstractCallable
     }
 
     /** {@inheritDoc} */
-    @Override protected List<IgniteUuid> call0(IgfsContext ctx) throws Exception {
+    @Override public List<IgniteUuid> call0(IgfsContext ctx) throws Exception {
         IgfsMetaManager meta =  ctx.meta();
 
         return meta.idsForPath(path);

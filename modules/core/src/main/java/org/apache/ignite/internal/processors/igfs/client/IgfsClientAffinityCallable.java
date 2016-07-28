@@ -74,7 +74,7 @@ public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Colle
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<IgfsBlockLocation> call0(IgfsContext ctx) throws Exception {
+    @Override public Collection<IgfsBlockLocation> call0(IgfsContext ctx) throws Exception {
         return ctx.igfs().affinity(path, start, len, maxLen);
     }
 

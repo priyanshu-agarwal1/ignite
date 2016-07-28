@@ -50,7 +50,7 @@ public class IgfsClientSizeCallable extends IgfsClientAbstractCallable<Long> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Long call0(IgfsContext ctx) throws Exception {
+    @Override public Long call0(IgfsContext ctx) throws Exception {
         return ctx.igfs().size(path);
     }
 

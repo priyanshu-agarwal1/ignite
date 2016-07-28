@@ -51,7 +51,7 @@ public class IgfsClientSummaryCallable extends IgfsClientAbstractCallable<IgfsPa
     }
 
     /** {@inheritDoc} */
-    @Override protected IgfsPathSummary call0(IgfsContext ctx) throws Exception {
+    @Override public IgfsPathSummary call0(IgfsContext ctx) throws Exception {
         return ctx.igfs().summary(path);
     }
 

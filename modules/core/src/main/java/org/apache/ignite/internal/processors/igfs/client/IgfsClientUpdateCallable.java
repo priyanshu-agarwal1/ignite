@@ -66,7 +66,7 @@ public class IgfsClientUpdateCallable extends IgfsClientAbstractCallable<IgfsFil
     }
 
     /** {@inheritDoc} */
-    @Override protected IgfsFile call0(IgfsContext ctx) throws Exception {
+    @Override public IgfsFile call0(IgfsContext ctx) throws Exception {
         return ctx.igfs().update(path, props);
     }
 

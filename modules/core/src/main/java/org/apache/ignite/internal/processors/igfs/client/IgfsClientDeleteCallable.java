@@ -61,7 +61,7 @@ public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override protected Boolean call0(IgfsContext ctx) throws Exception {
+    @Override public Boolean call0(IgfsContext ctx) throws Exception {
         return ctx.igfs().delete(path, recursive);
     }
 

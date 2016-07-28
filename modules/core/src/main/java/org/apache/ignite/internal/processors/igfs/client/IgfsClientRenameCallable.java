@@ -63,7 +63,7 @@ public class IgfsClientRenameCallable extends IgfsClientAbstractCallable<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Void call0(IgfsContext ctx) throws Exception {
+    @Override public Void call0(IgfsContext ctx) throws Exception {
         ctx.igfs().rename(path, destPath);
 
         return null;
