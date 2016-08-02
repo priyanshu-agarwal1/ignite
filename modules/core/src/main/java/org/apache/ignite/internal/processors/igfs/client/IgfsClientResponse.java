@@ -31,6 +31,9 @@ import java.nio.ByteBuffer;
  * IGFS client closure execute response.
  */
 public class IgfsClientResponse implements Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Message ID. */
     private long msgId;
 

@@ -29,6 +29,9 @@ import java.nio.ByteBuffer;
  * IGFS client closure execute request.
  */
 public class IgfsClientRequest implements Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Base fields (all except of target) count. */
     private static final byte BASE_FIELDS_CNT = 2;
 
