@@ -108,7 +108,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
                 IgfsAbstractSelfTest.create(igfs, new IgfsPath[]{new IgfsPath("/dir")}, null);
                 return null;
             }
-        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes.");
+        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes [igfs=igfs]");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -118,7 +118,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes.");
+        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes [igfs=igfs]");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -128,6 +128,6 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes.");
+        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes [igfs=igfs]");
     }
 }
