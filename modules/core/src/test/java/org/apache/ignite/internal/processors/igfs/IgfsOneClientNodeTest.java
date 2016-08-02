@@ -100,6 +100,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testStartIgfs() throws Exception {
         final IgfsImpl igfs = (IgfsImpl) grid(0).fileSystem("igfs");
 
