@@ -548,8 +548,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futuresSize(); i++) {
-                MiniFuture mini = (MiniFuture)futureGet(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                MiniFuture mini = (MiniFuture) future(i);
 
                 if (mini.futureId().equals(miniId)) {
                     if (!mini.isDone())

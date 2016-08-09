@@ -231,8 +231,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futuresSize(); i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futureGet(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
 
                 if (!isMini(fut))
                     continue;

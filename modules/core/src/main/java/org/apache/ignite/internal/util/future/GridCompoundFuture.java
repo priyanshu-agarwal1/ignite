@@ -192,8 +192,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     public boolean hasPending() {
         synchronized (sync) {
             // Avoid iterator creation and collection copy.
-            for (int i = 0; i < futuresSize(); i++) {
-                IgniteInternalFuture<T> fut = futureGet(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                IgniteInternalFuture<T> fut = future(i);
 
                 if (!fut.isDone())
                     return true;
@@ -258,7 +258,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * Check completeness of the future.
      */
     private void checkComplete() {
-        if (initialized() && !isDone() && lsnrCalls == futuresSize()) {
+        if (initialized() && !isDone() && lsnrCalls == futuresCount()) {
             try {
                 onDone(rdc != null ? rdc.reduce() : null);
             }
@@ -283,7 +283,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @param idx - index index of the element to return
      * @return Future.
      */
-    protected IgniteInternalFuture<T> futureGet(int idx) {
+    protected IgniteInternalFuture<T> future(int idx) {
         assert idx >= 0;
 
         Object futs0 = futs;
@@ -304,9 +304,9 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * @return Futures size.
      */
-    protected int futuresSize() {
+    protected int futuresCount() {
         synchronized (sync) {
-            if(futs==null)
+            if (futs==null)
                 return 0;
 
             if (futs instanceof IgniteInternalFuture)

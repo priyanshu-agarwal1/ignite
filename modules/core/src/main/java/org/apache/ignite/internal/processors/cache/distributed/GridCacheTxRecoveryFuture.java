@@ -428,8 +428,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (sync) {
             // Avoid iterator creation.
-            for (int i = 0; i < futuresSize(); i++) {
-                IgniteInternalFuture<Boolean> fut = futureGet(i);
+            for (int i = 0; i < futuresCount(); i++) {
+                IgniteInternalFuture<Boolean> fut = future(i);
 
                 if (!isMini(fut))
                     continue;

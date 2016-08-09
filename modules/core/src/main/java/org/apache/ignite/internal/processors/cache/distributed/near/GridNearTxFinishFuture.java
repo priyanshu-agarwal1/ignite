@@ -196,8 +196,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             FinishMiniFuture finishFut = null;
 
             synchronized (sync) {
-                for (int i = 0; i < futuresSize(); i++) {
-                    IgniteInternalFuture<IgniteInternalTx> fut = futureGet(i);
+                for (int i = 0; i < futuresCount(); i++) {
+                    IgniteInternalFuture<IgniteInternalTx> fut = future(i);
 
                     if (fut.getClass() == FinishMiniFuture.class) {
                         FinishMiniFuture f = (FinishMiniFuture)fut;
