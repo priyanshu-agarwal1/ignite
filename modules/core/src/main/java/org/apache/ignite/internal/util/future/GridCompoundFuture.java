@@ -208,6 +208,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      *
      * @param fut Future to add.
      */
+    @SuppressWarnings("unchecked")
     public void add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
@@ -215,12 +216,12 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             if (futs == null)
                 futs = fut;
             else if (futs instanceof IgniteInternalFuture) {
-                Collection<IgniteInternalFuture<T>> list = new ArrayList<>(2);
+                Collection<IgniteInternalFuture> futs0 = new ArrayList<>(4);
 
-                list.add((IgniteInternalFuture<T>)futs);
-                list.add(fut);
+                futs0.add((IgniteInternalFuture)futs);
+                futs0.add(fut);
 
-                futs = list;
+                futs = futs0;
             }
             else
                 ((Collection<IgniteInternalFuture>)futs).add(fut);
