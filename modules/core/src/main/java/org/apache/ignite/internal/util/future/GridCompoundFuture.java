@@ -286,11 +286,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      */
     @SuppressWarnings("unchecked")
     protected IgniteInternalFuture<T> future(int idx) {
-        assert idx >= 0;
-        assert idx < futuresCount();
-        assert futs != null;
-
         assert Thread.holdsLock(sync);
+        assert futs != null && idx >= 0 && idx < futuresCount();
 
         if (futs instanceof IgniteInternalFuture) {
             assert idx == 0;
