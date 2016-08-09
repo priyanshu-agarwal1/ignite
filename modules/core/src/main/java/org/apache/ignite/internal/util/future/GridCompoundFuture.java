@@ -284,27 +284,27 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
      * @param idx - index index of the element to return
      * @return Future.
      */
+    @SuppressWarnings("unchecked")
     protected IgniteInternalFuture<T> future(int idx) {
         assert idx >= 0;
+        assert idx < futuresCount();
+        assert futs != null;
 
-        Object futs0 = futs;
+        assert Thread.holdsLock(sync);
 
-        if (futs0 == null)
-            throw new IndexOutOfBoundsException("Index: " + idx + ", Size: 0");
+        if (futs instanceof IgniteInternalFuture) {
+            assert idx == 0;
 
-        if (futs0 instanceof IgniteInternalFuture) {
-            if (idx > 0)
-                throw new IndexOutOfBoundsException("Index: " + idx + ", Size: 1");
-
-            return (IgniteInternalFuture<T>)futs0;
+            return (IgniteInternalFuture<T>)futs;
         }
-
-        return ((List<IgniteInternalFuture<T>>)futs0).get(idx);
+        else
+            return ((List<IgniteInternalFuture>)futs).get(idx);
     }
 
     /**
      * @return Futures size.
      */
+    @SuppressWarnings("unchecked")
     protected int futuresCount() {
         synchronized (sync) {
             if (futs==null)
@@ -313,7 +313,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             if (futs instanceof IgniteInternalFuture)
                 return 1;
 
-            return ((Collection<IgniteInternalFuture<T>>)futs).size();
+            return ((Collection<IgniteInternalFuture>)futs).size();
         }
     }
 
